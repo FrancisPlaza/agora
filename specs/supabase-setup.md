@@ -42,6 +42,8 @@ Migrations live in `supabase/migrations/` (also symlinked as `db/` for convenien
 
 Migrations are **append-only**. Never edit a committed migration — write a new one.
 
+There is no separate seed step. The seed migration (`0006_seed_topics.sql`) runs as part of every `db:reset`.
+
 ## Environment variables
 
 | Variable | Description |

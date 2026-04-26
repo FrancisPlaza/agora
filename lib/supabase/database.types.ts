@@ -243,13 +243,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "rankings_ballot_id_fkey"
-            columns: ["ballot_id"]
-            isOneToOne: false
-            referencedRelation: "ballots_admin_view"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "rankings_topic_id_fkey"
             columns: ["topic_id"]
             isOneToOne: false
@@ -392,41 +385,7 @@ export type Database = {
       }
     }
     Views: {
-      ballots_admin_view: {
-        Row: {
-          created_at: string | null
-          id: string | null
-          locked_at: string | null
-          submitted_at: string | null
-          updated_at: string | null
-          voter_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string | null
-          locked_at?: string | null
-          submitted_at?: string | null
-          updated_at?: string | null
-          voter_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string | null
-          locked_at?: string | null
-          submitted_at?: string | null
-          updated_at?: string | null
-          voter_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ballots_voter_id_fkey"
-            columns: ["voter_id"]
-            isOneToOne: true
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       is_admin: { Args: never; Returns: boolean }

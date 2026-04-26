@@ -12,7 +12,6 @@
     "typecheck": "tsc --noEmit",
     "db:reset": "supabase db reset",
     "db:migrate": "supabase migration up --local",
-    "db:seed": "supabase db reset",
     "db:types": "supabase gen types typescript --local 2>/dev/null | grep -v '^Connecting' > lib/supabase/database.types.ts"
   },
   "dependencies": {

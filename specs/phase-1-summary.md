@@ -3,7 +3,7 @@
 ## What shipped
 
 ### Project scaffold
-- Next.js 15.2.4 (App Router, TypeScript strict, Turbopack)
+- Next.js 16.2.4 (App Router, TypeScript strict, Turbopack)
 - Tailwind CSS 4 with design tokens from `src/styles.css` (palette, radii, font families)
 - Inter + Source Serif 4 via `next/font/google`
 - Vitest, ESLint, Prettier configured
