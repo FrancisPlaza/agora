@@ -431,6 +431,7 @@ export type Database = {
     Functions: {
       is_admin: { Args: never; Returns: boolean }
       is_approved: { Args: never; Returns: boolean }
+      submit_ballot: { Args: { p_rankings: Json }; Returns: undefined }
     }
     Enums: {
       note_visibility: "private" | "class"
