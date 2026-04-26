@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Agora — JDN101</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400;1,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="src/styles.css" />
+<style>
+  /* Tab switcher chrome */
+  .agora-tabs { position: fixed; top: 0; left: 0; right: 0; height: 44px; background: #fff;
+    border-bottom: 1px solid var(--line); z-index: 40; display: flex; align-items: center; padding: 0 16px; gap: 4px; }
+  .agora-tab { padding: 8px 14px; font-size: 13px; font-weight: 500; color: var(--text-2); cursor: pointer; border-radius: 4px; }
+  .agora-tab--active { color: var(--violet-600); background: var(--violet-100); }
+  .agora-stage { position: fixed; top: 44px; left: 0; right: 0; bottom: 0; }
+  .agora-brand { font-family: var(--serif); font-weight: 600; font-size: 14px; color: var(--navy); margin-right: 16px; padding-left: 4px; display: flex; align-items: center; gap: 8px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<template id="__bundler_thumbnail">
+  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100" height="100" fill="#0A2540"/>
+    <text x="50" y="64" text-anchor="middle" font-family="Georgia,serif" font-size="48" font-weight="600" fill="#fff">A</text>
+    <circle cx="50" cy="50" r="36" fill="none" stroke="#635BFF" stroke-width="1.5" opacity="0.5"/>
+  </svg>
+</template>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="src/data.jsx"></script>
+<script type="text/babel" src="src/ui.jsx"></script>
+<script type="text/babel" src="src/chrome.jsx"></script>
+<script type="text/babel" src="src/screens-public.jsx"></script>
+<script type="text/babel" src="src/screens-voter.jsx"></script>
+<script type="text/babel" src="src/screens-presenter.jsx"></script>
+<script type="text/babel" src="src/screens-admin.jsx"></script>
+<script type="text/babel" src="src/screens-results.jsx"></script>
+<script type="text/babel" src="src/tweaks-panel.jsx"></script>
+<script type="text/babel" src="src/prototype.jsx"></script>
+<script type="text/babel" src="src/design-canvas.jsx"></script>
+<script type="text/babel" src="src/canvas-view.jsx"></script>
+
+<script type="text/babel">
+const { useState: uS } = React;
+
+function App() {
+  const [tab, setTab] = uS("prototype");
+  return <ToastProvider>
+    <div className="agora-tabs">
+      <div className="agora-brand">
+        <span className="agora-mark" style={{ width: 22, height: 22, fontSize: 13 }}>A</span>
+        Agora
+      </div>
+      <div className={`agora-tab ${tab === "prototype" ? "agora-tab--active" : ""}`} onClick={() => setTab("prototype")}>Prototype</div>
+      <div className={`agora-tab ${tab === "canvas" ? "agora-tab--active" : ""}`} onClick={() => setTab("canvas")}>Design canvas · 18 screens + components</div>
+      <div style={{ flex: 1 }}/>
+      <div style={{ fontSize: 12, color: "var(--text-2)" }}>JDN101 · Philosophy of Law · A.Y. 2025-26</div>
+    </div>
+    <div className="agora-stage">
+      {tab === "prototype" ? <Prototype /> : <CanvasView />}
+    </div>
+  </ToastProvider>;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+
+</body>
+</html>
