@@ -3,7 +3,11 @@ import { createServerClient, type CookieMethodsServer } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 
-const PUBLIC_PATHS = new Set(["/", "/register", "/signin"]);
+// Paths an unauthenticated user is allowed to land on. `/awaiting-email`
+// is included because the post-register "check your inbox" view runs in
+// the gap between submitting the form and clicking the magic link, when
+// the user has no session yet.
+const PUBLIC_PATHS = new Set(["/", "/register", "/signin", "/awaiting-email"]);
 
 const STATUS_GATE: Record<string, string> = {
   pending_email: "/awaiting-email",

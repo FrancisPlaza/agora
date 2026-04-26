@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { PublicCard } from "@/components/public-card";
 import { signOut } from "@/lib/actions/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { resendAction } from "./actions";
 
 interface PageProps {
@@ -10,6 +11,11 @@ interface PageProps {
 
 export default async function AwaitingEmail({ searchParams }: PageProps) {
   const params = await searchParams;
+  // Right after register the user has no session yet (magic link not
+  // clicked). Once they click it, they're signed in and may be back here
+  // if their status is still pending_email — only then is resend/sign-out
+  // meaningful.
+  const user = await getCurrentUser();
 
   return (
     <PublicCard title="Confirm your email">
@@ -31,18 +37,28 @@ export default async function AwaitingEmail({ searchParams }: PageProps) {
       {params.error ? (
         <div className="mt-4 text-[13px] text-danger">{params.error}</div>
       ) : null}
-      <div className="mt-5 flex justify-between gap-2">
-        <form action={signOut}>
-          <Button kind="ghost" type="submit">
-            Sign out
-          </Button>
-        </form>
-        <form action={resendAction}>
-          <Button kind="secondary" type="submit">
-            Resend link
-          </Button>
-        </form>
-      </div>
+      {user ? (
+        <div className="mt-5 flex justify-between gap-2">
+          <form action={signOut}>
+            <Button kind="ghost" type="submit">
+              Sign out
+            </Button>
+          </form>
+          <form action={resendAction}>
+            <Button kind="secondary" type="submit">
+              Resend link
+            </Button>
+          </form>
+        </div>
+      ) : (
+        <div className="mt-5 text-[13px] text-text-2">
+          Didn&rsquo;t get the email?{" "}
+          <a href="/signin" className="text-violet-600 hover:underline">
+            Request a new link
+          </a>
+          .
+        </div>
+      )}
     </PublicCard>
   );
 }
