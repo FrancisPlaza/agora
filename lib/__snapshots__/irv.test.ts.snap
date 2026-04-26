@@ -1,0 +1,29 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Test 9 — Larger realistic scenario (32 topics, 30 ballots) > matches snapshot 1`] = `
+{
+  "finalShares": [
+    52.2,
+    54.2,
+    59.1,
+    52.2,
+    100,
+  ],
+  "roundCounts": [
+    31,
+    30,
+    29,
+    28,
+    28,
+  ],
+  "topicsCount": 32,
+  "totalBallots": 30,
+  "winners": [
+    4,
+    8,
+    12,
+    3,
+    1,
+  ],
+}
+`;
