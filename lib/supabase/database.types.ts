@@ -432,6 +432,10 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       is_approved: { Args: never; Returns: boolean }
       submit_ballot: { Args: { p_rankings: Json }; Returns: undefined }
+      write_tally_results: {
+        Args: { p_results: Json; p_total_ballots: number }
+        Returns: undefined
+      }
     }
     Enums: {
       note_visibility: "private" | "class"

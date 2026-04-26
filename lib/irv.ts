@@ -198,10 +198,19 @@ function runSingleIRV(
 
 // ── Sequential IRV (full tally) ───────────────────────────────────────────
 
+/**
+ * Run sequential IRV across `ballots` and `topics`, electing up to `positions`
+ * winners (default 5). Pure: no I/O, no randomness, no time dependencies.
+ *
+ * `computedAt` is taken as a parameter rather than read from the system clock
+ * inside the algorithm — pass `new Date().toISOString()` from the caller.
+ * Defaults to an empty string so tests that strip the field still pass.
+ */
 export function tally(
   ballots: Ballot[],
   topics: Topic[],
   positions: number = 5,
+  computedAt: string = "",
 ): TallyResult {
   const orderMap = buildOrderMap(topics);
   const elected: (number | null)[] = [];
@@ -228,6 +237,6 @@ export function tally(
     runs,
     totalBallots: ballots.length,
     topicsCount: topics.length,
-    computedAt: new Date().toISOString(),
+    computedAt,
   };
 }
