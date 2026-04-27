@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type BannerTone = "violet" | "amber" | "neutral";
+export type BannerTone = "violet" | "amber" | "neutral" | "success";
 
 interface StatusBannerProps {
   tone?: BannerTone;
@@ -13,6 +13,7 @@ const TONE_CLASSES: Record<BannerTone, string> = {
   violet: "bg-violet-100 border-[#DEDBFF]",
   amber: "bg-amber-50 border-[#EBDBA8]",
   neutral: "bg-white border-line",
+  success: "bg-[#E1F2EA] border-[#B7DCC6]",
 };
 
 export function StatusBanner({
