@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import { ArtPlaceholder } from "@/components/art-placeholder";
 import { NoteEditor } from "@/components/note-editor";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs } from "@/components/ui/tabs";
+import { getCurrentUser } from "@/lib/auth";
 import { getMyNote } from "@/lib/data/notes";
 import { getTopicArtUrl } from "@/lib/data/storage";
 import { getTopic } from "@/lib/data/topics";
@@ -33,6 +35,11 @@ export default async function TopicDetail({ params, searchParams }: PageProps) {
 
   const { tab } = await searchParams;
   const activeTab = tab === "class" ? "class" : "mine";
+
+  const user = await getCurrentUser();
+  const isMyTopic =
+    !!user && topic.presenter_voter_id === user.id &&
+    (topic.state === "presented" || topic.state === "published");
 
   const [myNote, artUrl] = await Promise.all([
     getMyNote(id),
@@ -125,6 +132,16 @@ export default async function TopicDetail({ params, searchParams }: PageProps) {
             )}
           </div>
         </div>
+        {isMyTopic ? (
+          <div className="shrink-0 flex items-center gap-2">
+            <Badge tone="amber">Your topic</Badge>
+            <Link href={`/topic/${topic.id}/upload`}>
+              <Button kind="secondary" size="sm" icon="upload">
+                {topic.state === "published" ? "Edit upload" : "Upload art"}
+              </Button>
+            </Link>
+          </div>
+        ) : null}
       </div>
 
       {topic.art_explanation ? (

@@ -68,6 +68,7 @@ export default async function Dashboard({ searchParams }: PageProps) {
 
   const banner = pickBanner({
     myTopicPresented: myTopic?.state === "presented",
+    myTopicId: myTopic?.id ?? null,
     polls,
     submitted: !!ballot?.submitted_at || !!ballot?.locked_at,
     rankedCount: ballot?.rankings.length ?? 0,
@@ -122,6 +123,7 @@ export default async function Dashboard({ searchParams }: PageProps) {
 
 interface BannerProps {
   myTopicPresented: boolean;
+  myTopicId: number | null;
   polls: ReturnType<typeof derivePollsState>;
   submitted: boolean;
   rankedCount: number;
@@ -165,6 +167,7 @@ function fmtDateTime(input: string | null): string {
  */
 function pickBanner({
   myTopicPresented,
+  myTopicId,
   polls,
   submitted,
   rankedCount,
@@ -172,13 +175,13 @@ function pickBanner({
   deadlineAt,
   submittedAt,
 }: BannerProps): BannerSpec {
-  if (myTopicPresented) {
+  if (myTopicPresented && myTopicId != null) {
     return {
       tone: "amber",
       title: "Your turn — upload your presentation",
       sub: "Add your art and a 5-7 sentence explanation so it appears in the gallery.",
       action: (
-        <Link href="/profile">
+        <Link href={`/topic/${myTopicId}/upload`}>
           <Button kind="primary">Upload now</Button>
         </Link>
       ),
