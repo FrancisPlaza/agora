@@ -225,11 +225,15 @@ export async function openPolls(
 
 // ── runTallyFromAdmin ────────────────────────────────────────────────
 // Wraps lib/actions/tally.ts#runTally so the admin button can redirect
-// to /admin/results on success. tally.ts stays untouched.
+// to /results on success. tally.ts stays untouched.
+//
+// Phase 7 moved the results page out of /admin/ since voters can read
+// it too (RLS already permits via tally_results_approved_read). The
+// dashboard banner CTA + this redirect both point at /results now.
 export async function runTallyFromAdmin(): Promise<{ error?: string }> {
   const result = await runTally();
   if (result.error) return result;
   revalidateAdmin();
-  revalidatePath("/admin/results");
-  redirect("/admin/results");
+  revalidatePath("/results");
+  redirect("/results");
 }
