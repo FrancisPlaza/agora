@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import {
   DndContext,
   DragOverlay,
@@ -63,6 +64,7 @@ export function RankingEditor({
   totalTopics,
   focusTopicId,
 }: RankingEditorProps) {
+  const router = useRouter();
   const [ranked, setRanked] = useState<number[]>(initialRanked);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<SaveStatus>({ kind: "idle" });
@@ -204,9 +206,7 @@ export function RankingEditor({
         setSubmitError(result.error);
         return;
       }
-      // Page revalidates via revalidatePath inside the action chain;
-      // forcing a navigation reload to ensure the locked state appears.
-      window.location.assign("/vote");
+      router.refresh();
     });
   }
 

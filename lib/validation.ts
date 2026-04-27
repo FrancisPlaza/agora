@@ -86,6 +86,21 @@ export function isPdf(file: AcceptedArtInput): boolean {
   );
 }
 
+/**
+ * True if the file is HEIC/HEIF (by either MIME or extension). Used to
+ * branch the in-form preview path: non-Safari browsers can't render HEIC
+ * via <img>, so we show a styled placeholder instead of a broken image.
+ *
+ * iOS Safari sometimes uploads HEIC with an empty MIME type, hence the
+ * extension fallback.
+ */
+export function isHeic(file: AcceptedArtInput): boolean {
+  const mime = file.type.toLowerCase();
+  if (mime === "image/heic" || mime === "image/heif") return true;
+  const ext = fileExtension(file.name);
+  return ext === "heic" || ext === "heif";
+}
+
 /** Lowercase extension chosen for the storage path. Defaults to mime guess. */
 export function fileExtensionForStorage(file: AcceptedArtInput): string {
   const ext = fileExtension(file.name);

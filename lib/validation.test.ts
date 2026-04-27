@@ -3,6 +3,7 @@ import {
   countSentences,
   fileExtensionForStorage,
   isAcceptedArtFile,
+  isHeic,
   isPdf,
 } from "./validation";
 
@@ -82,6 +83,31 @@ describe("isAcceptedArtFile", () => {
       size: 1000,
     });
     expect(result.ok).toBe(false);
+  });
+});
+
+describe("isHeic", () => {
+  it("detects HEIC by MIME", () => {
+    expect(isHeic({ type: "image/heic", name: "x.heic", size: 1 })).toBe(true);
+    expect(isHeic({ type: "image/heif", name: "x.heif", size: 1 })).toBe(true);
+    expect(isHeic({ type: "IMAGE/HEIC", name: "x.heic", size: 1 })).toBe(true);
+  });
+
+  it("detects HEIC by extension when MIME is empty (iOS Safari edge case)", () => {
+    expect(isHeic({ type: "", name: "iphone.heic", size: 1 })).toBe(true);
+    expect(isHeic({ type: "", name: "iphone.HEIF", size: 1 })).toBe(true);
+  });
+
+  it("returns false for PNG, JPG, PDF, GIF", () => {
+    expect(isHeic({ type: "image/png", name: "x.png", size: 1 })).toBe(false);
+    expect(isHeic({ type: "image/jpeg", name: "x.jpg", size: 1 })).toBe(false);
+    expect(isHeic({ type: "application/pdf", name: "x.pdf", size: 1 })).toBe(false);
+    expect(isHeic({ type: "image/gif", name: "x.gif", size: 1 })).toBe(false);
+  });
+
+  it("returns false for files with no extension and a non-HEIC MIME", () => {
+    expect(isHeic({ type: "image/png", name: "no-ext", size: 1 })).toBe(false);
+    expect(isHeic({ type: "", name: "no-ext", size: 1 })).toBe(false);
   });
 });
 

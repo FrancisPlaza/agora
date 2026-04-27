@@ -9,6 +9,12 @@ interface UploadPreviewProps {
   previewUrl: string | null;
   noteCount?: number;
   presenterName?: string;
+  /**
+   * If set, the user picked a HEIC/HEIF file. Non-Safari browsers can't
+   * render those via <img>; render a placeholder card with the filename
+   * instead of a broken image. Upload still works for HEIC.
+   */
+  heicFileName?: string | null;
 }
 
 /**
@@ -26,6 +32,7 @@ export function UploadPreview({
   previewUrl,
   noteCount = 0,
   presenterName,
+  heicFileName = null,
 }: UploadPreviewProps) {
   return (
     <div className="bg-white border border-line rounded-lg overflow-hidden relative shadow-[0_1px_3px_rgba(10,37,64,0.06),0_1px_2px_rgba(10,37,64,0.04)]">
@@ -33,7 +40,16 @@ export function UploadPreview({
         <Badge tone="amber">Yours</Badge>
       </div>
       <div className="aspect-[4/3] overflow-hidden bg-surface-alt">
-        {previewUrl ? (
+        {heicFileName ? (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-2 px-4 text-center">
+            <div className="font-mono text-[12px] text-text-2 tabular-nums tracking-[0.04em] truncate max-w-full">
+              {heicFileName}
+            </div>
+            <div className="text-text-2 text-[12px] leading-snug">
+              HEIC preview unavailable in this browser. Image will appear after upload.
+            </div>
+          </div>
+        ) : previewUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={previewUrl}
