@@ -65,20 +65,29 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // Authenticated. Look up status to gate.
+  // Authenticated. Look up status + admin flag to gate.
   const { data: profile } = await supabase
     .from("profiles")
-    .select("status")
+    .select("status, is_admin")
     .eq("id", user.id)
     .maybeSingle();
 
   const status = profile?.status ?? "pending_email";
+  const isAdmin = profile?.is_admin ?? false;
 
   // Authed users never see register / signin.
   if (pathname === "/register" || pathname === "/signin") {
     const dest =
       status === "approved" ? "/dashboard" : (STATUS_GATE[status] ?? "/");
     return NextResponse.redirect(new URL(dest, request.url));
+  }
+
+  // Admin gate — must be approved AND is_admin to enter /admin/*.
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+    if (status !== "approved" || !isAdmin) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+    return response;
   }
 
   if (status === "approved") {

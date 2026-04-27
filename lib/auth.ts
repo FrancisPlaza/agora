@@ -55,3 +55,15 @@ export async function requireApproved(): Promise<Profile> {
       redirect("/");
   }
 }
+
+/**
+ * Server-component guard for `/admin/*`. Defensive backstop layered on
+ * the middleware admin gate — if a layout or page renders without
+ * middleware (route-handler edge case, etc.), this still bounces
+ * non-admins to the dashboard.
+ */
+export async function requireAdmin(): Promise<Profile> {
+  const profile = await requireApproved();
+  if (!profile.is_admin) redirect("/dashboard");
+  return profile;
+}

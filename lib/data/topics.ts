@@ -83,7 +83,9 @@ export const getTopic = cache(async (id: number): Promise<TopicView | null> => {
 
 /**
  * Returns the current user's assigned topic (the one they're presenting),
- * or `null`. Suggested in the Phase 2 hand-off notes.
+ * or `null`. Suggested in the Phase 2 hand-off notes; `class_note_count`
+ * is computed in Phase 6 (the admin topics page wants accurate counts
+ * everywhere — also benefits the profile page).
  */
 export const getMyTopic = cache(async (): Promise<TopicView | null> => {
   const supabase = await createClient();
@@ -101,10 +103,17 @@ export const getMyTopic = cache(async (): Promise<TopicView | null> => {
   if (error || !data) return null;
 
   const t = data as TopicWithPresenter;
+
+  const { count } = await supabase
+    .from("notes")
+    .select("id", { count: "exact", head: true })
+    .eq("topic_id", t.id)
+    .eq("visibility", "class");
+
   return {
     ...t,
     state: deriveState(t),
     presenter: t.presenter,
-    class_note_count: 0,
+    class_note_count: count ?? 0,
   };
 });
