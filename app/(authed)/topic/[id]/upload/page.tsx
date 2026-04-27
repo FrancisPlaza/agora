@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { UploadForm } from "@/components/upload-form";
 import { requireApproved } from "@/lib/auth";
 import { getTopicArtUrl } from "@/lib/data/storage";
 import { getTopic } from "@/lib/data/topics";
@@ -29,7 +29,7 @@ export default async function UploadPage({ params }: PageProps) {
   }
 
   const isEdit = topic.state === "published";
-  const existingThumbUrl = isEdit
+  const existingPreviewUrl = isEdit
     ? await getTopicArtUrl(topic.art_image_path, { w: 600, h: 450 })
     : null;
 
@@ -52,30 +52,18 @@ export default async function UploadPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* Form ships in commit 3 of Phase 5 — for now, a placeholder so the
-          gating logic above is independently verifiable. */}
-      <div className="bg-white border border-line rounded-lg p-6">
-        <p className="text-text-2 m-0">
-          {isEdit
-            ? "You've already published this topic. The edit form ships next."
-            : "Your topic is ready to publish. The upload form ships next."}
-        </p>
-        {existingThumbUrl ? (
-          <div className="mt-4 max-w-[320px] aspect-[4/3] overflow-hidden rounded border border-line">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={existingThumbUrl}
-              alt="Current artwork"
-              className="w-full h-full object-cover"
-            />
-          </div>
-        ) : null}
-        <div className="mt-5">
-          <Link href="/dashboard">
-            <Button kind="secondary">Back to dashboard</Button>
-          </Link>
-        </div>
-      </div>
+      <UploadForm
+        topicId={topic.id}
+        orderNum={topic.order_num}
+        philosopher={topic.philosopher}
+        theme={topic.theme}
+        presenterName={profile.full_name}
+        noteCount={topic.class_note_count}
+        isEdit={isEdit}
+        initialArtTitle={topic.art_title ?? ""}
+        initialArtExplanation={topic.art_explanation ?? ""}
+        existingPreviewUrl={existingPreviewUrl}
+      />
     </div>
   );
 }
