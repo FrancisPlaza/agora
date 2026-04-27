@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import {
   lockBallots,
   openPolls,
+  reopenPollsAndUnlockDrafts,
   runTallyFromAdmin,
   setDeadline,
 } from "@/lib/actions/admin";
@@ -94,6 +95,44 @@ export function OpenPollsButton() {
         {isPending ? "Opening…" : "Open polls now"}
       </Button>
       {error ? <span className="text-xs text-danger">{error}</span> : null}
+    </div>
+  );
+}
+
+export function ReopenAndUnlockButton({ count }: { count: number }) {
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function fire() {
+    setError(null);
+    setSuccess(null);
+    startTransition(async () => {
+      const fd = new FormData();
+      const result = await reopenPollsAndUnlockDrafts(fd);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      const n = result.unlocked ?? 0;
+      setSuccess(
+        `Polls reopened. ${n} draft ballot${n === 1 ? "" : "s"} unlocked.`,
+      );
+    });
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <Button kind="ghost" onClick={fire} disabled={isPending}>
+        {isPending
+          ? "Reopening…"
+          : `Reopen and unlock ${count} draft${count === 1 ? "" : "s"}`}
+      </Button>
+      {error ? (
+        <span className="text-xs text-danger">{error}</span>
+      ) : success ? (
+        <span className="text-xs text-success">{success}</span>
+      ) : null}
     </div>
   );
 }

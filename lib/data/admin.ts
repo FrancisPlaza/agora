@@ -44,6 +44,12 @@ export interface AdminSummary {
   topics_not_presented: number;
   ballots_submitted: number;
   total_voters: number;
+  /**
+   * Drafts force-locked by `lock_ballots()` that are still unsubmitted.
+   * Surfaces the "reopen and unlock drafts" affordance on /admin/voting
+   * after a misfired lock.
+   */
+  force_locked_drafts: number;
 }
 
 export interface UnassignedTopic {
@@ -187,31 +193,39 @@ export const getAuditLog = cache(
 
 export const getAdminSummary = cache(async (): Promise<AdminSummary> => {
   const supabase = await createClient();
-  const [pending, topicsResult, ballotsResult, votersResult] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "pending_approval"),
-    supabase
-      .from("topics")
-      .select("id", { count: "exact", head: true })
-      .is("presented_at", null),
-    supabase
-      .from("ballots")
-      .select("id", { count: "exact", head: true })
-      .not("submitted_at", "is", null),
-    // Total voters = approved profiles with an assigned topic.
-    supabase
-      .from("topics")
-      .select("id", { count: "exact", head: true })
-      .not("presenter_voter_id", "is", null),
-  ]);
+  const [pending, topicsResult, ballotsResult, votersResult, forceLockedResult] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending_approval"),
+      supabase
+        .from("topics")
+        .select("id", { count: "exact", head: true })
+        .is("presented_at", null),
+      supabase
+        .from("ballots")
+        .select("id", { count: "exact", head: true })
+        .not("submitted_at", "is", null),
+      // Total voters = approved profiles with an assigned topic.
+      supabase
+        .from("topics")
+        .select("id", { count: "exact", head: true })
+        .not("presenter_voter_id", "is", null),
+      // Force-locked drafts = unsubmitted ballots with locked_at set.
+      supabase
+        .from("ballots")
+        .select("id", { count: "exact", head: true })
+        .is("submitted_at", null)
+        .not("locked_at", "is", null),
+    ]);
 
   return {
     pending_approvals: pending.count ?? 0,
     topics_not_presented: topicsResult.count ?? 0,
     ballots_submitted: ballotsResult.count ?? 0,
     total_voters: votersResult.count ?? 0,
+    force_locked_drafts: forceLockedResult.count ?? 0,
   };
 });
 

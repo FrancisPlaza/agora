@@ -223,6 +223,61 @@ export async function openPolls(
   return {};
 }
 
+// ── reopenPollsAndUnlockDrafts ───────────────────────────────────────
+// Wraps the common "I locked ballots by mistake" recovery path:
+// open_polls() to clear the polls-locked flag, then unlock_ballot() per
+// force-locked draft so voters can resume editing. Uses the user-scoped
+// client (admin's session) so each unlock_ballot RPC runs with
+// auth.uid() = admin_id and audit-logs correctly. Service-role would
+// bypass the audit identity.
+export async function reopenPollsAndUnlockDrafts(
+  formData: FormData,
+): Promise<{ error?: string; unlocked?: number }> {
+  const raw = String(formData.get("openAtIso") ?? "").trim();
+  let parsedIso: string | null = null;
+  if (raw) {
+    const parsed = new Date(raw);
+    if (Number.isNaN(parsed.getTime())) return { error: "Invalid open time." };
+    parsedIso = parsed.toISOString();
+  }
+
+  const supabase = await createClient();
+
+  const { error: openErr } = await supabase.rpc("open_polls", {
+    p_at: parsedIso,
+  } as never);
+  if (openErr) return rpcError(openErr);
+
+  const { data: ballots, error: listErr } = await supabase
+    .from("ballots")
+    .select("voter_id")
+    .is("submitted_at", null)
+    .not("locked_at", "is", null);
+  if (listErr) {
+    return { error: `Failed to list locked drafts: ${listErr.message}` };
+  }
+
+  let failures = 0;
+  for (const b of ballots ?? []) {
+    const { error: unlockErr } = await supabase.rpc("unlock_ballot", {
+      p_target: b.voter_id,
+    } as never);
+    if (unlockErr) failures++;
+  }
+
+  revalidatePath("/admin/voting");
+  revalidatePath("/admin");
+  revalidatePath("/dashboard");
+  revalidatePath("/vote");
+
+  if (failures > 0) {
+    return {
+      error: `Polls reopened, but ${failures} ballot${failures === 1 ? "" : "s"} failed to unlock. Try unlocking from /admin/voters individually.`,
+    };
+  }
+  return { unlocked: ballots?.length ?? 0 };
+}
+
 // ── runTallyFromAdmin ────────────────────────────────────────────────
 // Wraps lib/actions/tally.ts#runTally so the admin button can redirect
 // to /results on success. tally.ts stays untouched.

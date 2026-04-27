@@ -5,6 +5,7 @@ import {
   DeadlineForm,
   LockBallotsButton,
   OpenPollsButton,
+  ReopenAndUnlockButton,
   RunTallyButton,
 } from "./voting-controls";
 
@@ -75,6 +76,17 @@ export default async function AdminVoting() {
               Currently open at: <b className="text-text">{fmtDateTime(voting?.polls_open_at ?? null)}</b>
             </div>
             <OpenPollsButton />
+            {summary.force_locked_drafts > 0 ? (
+              <div className="mt-3 pt-3 border-t border-line-2">
+                <div className="text-[13px] text-text-2 mb-2">
+                  <b className="text-text">{summary.force_locked_drafts}</b>{" "}
+                  draft ballot{summary.force_locked_drafts === 1 ? "" : "s"}{" "}
+                  force-locked. Reopening polls alone won&rsquo;t restore edit
+                  access.
+                </div>
+                <ReopenAndUnlockButton count={summary.force_locked_drafts} />
+              </div>
+            ) : null}
           </div>
         </Card>
 
