@@ -4,17 +4,28 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon, type IconName } from "@/components/ui/icon";
 
-const LINKS: Array<{ href: string; label: string; icon: IconName }> = [
+const VOTER_LINKS: Array<{ href: string; label: string; icon: IconName }> = [
   { href: "/dashboard", label: "Dashboard", icon: "home" },
   { href: "/vote", label: "Vote", icon: "vote" },
   { href: "/profile", label: "Profile", icon: "user" },
 ];
 
-export function BottomNav() {
+const ADMIN_LINK: { href: string; label: string; icon: IconName } = {
+  href: "/admin",
+  label: "Admin",
+  icon: "shield",
+};
+
+interface BottomNavProps {
+  isAdmin?: boolean;
+}
+
+export function BottomNav({ isAdmin }: BottomNavProps) {
   const pathname = usePathname();
+  const links = isAdmin ? [...VOTER_LINKS, ADMIN_LINK] : [...VOTER_LINKS];
   return (
     <nav className="md:hidden sticky bottom-0 bg-white border-t border-line flex px-2 pt-1.5 pb-2.5 z-30">
-      {LINKS.map((l) => {
+      {links.map((l) => {
         const active = pathname === l.href || pathname.startsWith(l.href + "/");
         return (
           <Link

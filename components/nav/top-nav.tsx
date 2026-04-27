@@ -5,25 +5,31 @@ import { usePathname } from "next/navigation";
 import { AgoraWordmark } from "@/components/ui/agora-wordmark";
 import { Avatar } from "@/components/ui/avatar";
 
-const LINKS = [
+const VOTER_LINKS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/vote", label: "Vote" },
   { href: "/profile", label: "Profile" },
 ] as const;
 
+const ADMIN_LINK = { href: "/admin", label: "Admin" } as const;
+
 interface TopNavProps {
   fullName: string;
+  isAdmin?: boolean;
 }
 
-export function TopNav({ fullName }: TopNavProps) {
+export function TopNav({ fullName, isAdmin }: TopNavProps) {
   const pathname = usePathname();
+  const links = isAdmin
+    ? [...VOTER_LINKS, ADMIN_LINK]
+    : [...VOTER_LINKS];
   return (
     <nav className="hidden md:flex items-center gap-6 px-6 h-14 bg-white border-b border-line">
       <Link href="/dashboard" className="shrink-0">
         <AgoraWordmark size={18} />
       </Link>
       <div className="flex gap-1 flex-1">
-        {LINKS.map((l) => {
+        {links.map((l) => {
           const active = pathname === l.href || pathname.startsWith(l.href + "/");
           return (
             <Link

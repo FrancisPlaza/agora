@@ -12,9 +12,9 @@ export default async function AuthedLayout({
 
   return (
     <div className="min-h-dvh flex flex-col bg-surface-alt">
-      <TopNav fullName={profile.full_name} />
+      <TopNav fullName={profile.full_name} isAdmin={profile.is_admin} />
       <main className="flex-1 min-h-0 overflow-auto">{children}</main>
-      <BottomNav />
+      <BottomNav isAdmin={profile.is_admin} />
     </div>
   );
 }
