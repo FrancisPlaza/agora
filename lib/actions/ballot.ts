@@ -13,6 +13,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   DUPLICATE_TOPIC: "Duplicate topics not allowed",
   INVALID_TOPIC: "One or more topic IDs are invalid",
   BALLOT_LOCKED: "Your ballot is locked — contact a beadle to unlock",
+  POLLS_CLOSED: "Polls are closed — submission isn't possible",
+  POLLS_NOT_OPEN: "Polls aren't open yet — try again once your beadle opens voting",
 };
 
 function rpcError(error: { message: string }): { error: string } {
