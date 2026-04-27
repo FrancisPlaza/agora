@@ -24,7 +24,7 @@ export function TopNav({ fullName, isAdmin }: TopNavProps) {
     ? [...VOTER_LINKS, ADMIN_LINK]
     : [...VOTER_LINKS];
   return (
-    <nav className="hidden md:flex items-center gap-6 px-6 h-14 bg-white border-b border-line">
+    <nav className="hidden md:flex items-center gap-6 px-6 h-14 bg-white border-b border-line print:hidden">
       <Link href="/dashboard" className="shrink-0">
         <AgoraWordmark size={18} />
       </Link>

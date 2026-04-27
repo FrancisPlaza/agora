@@ -24,7 +24,7 @@ export function BottomNav({ isAdmin }: BottomNavProps) {
   const pathname = usePathname();
   const links = isAdmin ? [...VOTER_LINKS, ADMIN_LINK] : [...VOTER_LINKS];
   return (
-    <nav className="md:hidden sticky bottom-0 bg-white border-t border-line flex px-2 pt-1.5 pb-2.5 z-30">
+    <nav className="md:hidden sticky bottom-0 bg-white border-t border-line flex px-2 pt-1.5 pb-2.5 z-30 print:hidden">
       {links.map((l) => {
         const active = pathname === l.href || pathname.startsWith(l.href + "/");
         return (

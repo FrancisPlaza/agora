@@ -36,3 +36,25 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
+
+/*
+ * Print: keep colors true (so the success-green winner bars render
+ * correctly on paper / PDF), force a flat white background, drop the
+ * fixed-position chrome that the navs and the ranking sticky bar use.
+ * Element-level `print:hidden` (Tailwind variant) handles the navs
+ * directly; this is the page-frame baseline.
+ */
+@media print {
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  body {
+    background: white;
+  }
+  [data-results-page] {
+    background: white !important;
+  }
+}
