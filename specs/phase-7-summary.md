@@ -66,10 +66,10 @@ All have `@sanbeda.edu.ph` emails, magic-link only. The seed script prints the f
 |---|---|---|
 | `seed-voter1@sanbeda.edu.ph` | **Admin** + voter (Topic 1: David Hume) | Bypasses the SQL bootstrap step |
 | `seed-voter2@sanbeda.edu.ph` | Voter (Topic 2: Jeremy Bentham) | Has a submitted ballot |
-| `seed-voter3@sanbeda.edu.ph` | Voter (Topic 3: John Stuart Mill) | Has a submitted ballot |
-| `seed-voter4@sanbeda.edu.ph` | Voter (Topic 4: Aristotle) | Has a submitted ballot |
-| `seed-voter5@sanbeda.edu.ph` | Voter (Topic 5: Plato) | Has a submitted ballot |
-| `seed-voter6@sanbeda.edu.ph` | Voter (Topic 6: H.L.A. Hart) | Has a submitted ballot |
+| `seed-voter3@sanbeda.edu.ph` | Voter (Topic 3: John Austin) | Has a submitted ballot |
+| `seed-voter4@sanbeda.edu.ph` | Voter (Topic 4: Hans Kelsen) | Has a submitted ballot |
+| `seed-voter5@sanbeda.edu.ph` | Voter (Topic 5: Thomas Hobbes) | Has a submitted ballot |
+| `seed-voter6@sanbeda.edu.ph` | Voter (Topic 6: Herbert Hart) | Has a submitted ballot |
 | `seed-voter7..10@sanbeda.edu.ph` | Voter (Topics 7..10) | No ballot — the dashboard banner shows the polls-closed variant |
 
 After seed, the IRV tally winners (run 1..5) are: David Hume, Jeremy Bentham, H.L.A. Hart, Confucianism, G.W.F. Hegel — five distinct candidates across the runs as the algorithm requires. 148 rounds total across the five runs (high because 5 ballots vs 32 candidates means lots of single-elimination — that's correct behaviour, not a bug).
@@ -77,7 +77,7 @@ After seed, the IRV tally winners (run 1..5) are: David Hume, Jeremy Bentham, H.
 ## What to look at first when reviewing
 
 1. **The print stylesheet.** Open `/results`, hit Cmd+P. Should show the hero, podium, and the active run's timeline — no nav, no run tabs, no CSV/Print buttons in the print preview. The active run gets a "Run N — [Winner]" heading at the top of its timeline section. The medal pills, podium colours, and bar chart all keep their colour (it's the most likely thing to break across browsers' print engines).
-2. **CSV correctness.** Download both. Open in Excel / Numbers / a text editor. Confirm `Legalism, or Rule by the Law` (the topic with a comma in its theme) is properly RFC 4180 quoted. Confirm `final_share` and `share` are decimals between 0 and 1 (not percentages — easier to format downstream).
+2. **CSV correctness.** Download both. Open in Excel / Numbers / a text editor. Confirm `final_share` and `share` are percentages 0-100 with one decimal place. RFC 4180 quoting around values containing commas (e.g. 'Legalism, or Rule by the Law').
 3. **Medal precedence + the "Yours" badge stack.** The first seeded voter owns Topic 1, which is also the run-1 winner. So that card should display BOTH the gold medal pill AND the "Yours" pill, stacked vertically, top-right.
 4. **Banner precedence.** With the seed loaded, the dashboard banner should be the success-green "Results are in." variant — it outranks the polls-closed amber. If you SQL-clear the tally (`delete from tally_results;`), it should fall back to amber.
 5. **Run tabs.** Click through Run 2..5. The hero copy, podium, and active timeline don't change between tabs — only the timeline beneath. The five winners are distinct (sequential IRV's whole point).
