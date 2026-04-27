@@ -392,17 +392,25 @@ function UnrankedRow({
     id: topic.id,
   });
 
+  // Listeners attach to the drag handle only — putting them on the row
+  // would let dnd-kit's PointerSensor swallow clicks on the Add button.
   return (
     <div
       ref={setNodeRef}
       className={[
-        "flex items-center gap-3 px-3 py-2.5 bg-white border border-line rounded mb-2 cursor-grab",
+        "flex items-center gap-3 px-3 py-2.5 bg-white border border-line rounded mb-2",
         isDragging ? "opacity-40" : "",
       ].join(" ")}
-      {...attributes}
-      {...listeners}
     >
-      <span className="text-text-3"><Icon name="drag" size={14} /></span>
+      <button
+        type="button"
+        className="text-text-3 cursor-grab active:cursor-grabbing p-1 -m-1"
+        aria-label="Drag to ranking"
+        {...attributes}
+        {...listeners}
+      >
+        <Icon name="drag" size={14} />
+      </button>
       {thumb}
       <div className="text-[13px] min-w-0 flex-1">
         <b className="font-serif font-semibold text-sm block truncate">

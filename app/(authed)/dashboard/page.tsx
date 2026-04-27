@@ -1,10 +1,16 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Chips } from "@/components/ui/chips";
-import { StatusBanner } from "@/components/ui/status-banner";
+import { StatusBanner, type BannerTone } from "@/components/ui/status-banner";
 import { TopicCard } from "@/components/topic-card";
 import { getAllTopics, getMyTopic } from "@/lib/data/topics";
 import { getMyNotedTopics } from "@/lib/data/notes";
+import {
+  derivePollsState,
+  getMyBallot,
+  getVotingState,
+} from "@/lib/data/voting";
 
 type Filter = "all" | "published" | "presented" | "unassigned" | "mynotes";
 
@@ -26,11 +32,23 @@ export default async function Dashboard({ searchParams }: PageProps) {
   const filterParam = (params.filter ?? "all") as Filter;
   const filter: Filter = FILTERS.includes(filterParam) ? filterParam : "all";
 
-  const [topics, myTopic, myNotedTopics] = await Promise.all([
-    getAllTopics(),
-    getMyTopic(),
-    getMyNotedTopics(),
-  ]);
+  const [topics, myTopic, myNotedTopics, votingState, ballot] =
+    await Promise.all([
+      getAllTopics(),
+      getMyTopic(),
+      getMyNotedTopics(),
+      getVotingState(),
+      getMyBallot(),
+    ]);
+
+  const polls = derivePollsState(
+    {
+      polls_locked: votingState?.polls_locked ?? false,
+      polls_open_at: votingState?.polls_open_at ?? null,
+      deadline_at: votingState?.deadline_at ?? null,
+    },
+    new Date(),
+  );
 
   const myNotedSet = new Set(myNotedTopics);
 
@@ -48,25 +66,15 @@ export default async function Dashboard({ searchParams }: PageProps) {
     return t.state === filter;
   });
 
-  // Status banner: presenter whose own topic is in `presented` state gets
-  // the amber "Your turn" variant. Otherwise, neutral informational copy.
-  const banner =
-    myTopic && myTopic.state === "presented"
-      ? {
-          tone: "amber" as const,
-          title: "Your turn — upload your presentation",
-          sub: "Add your art and a 5-7 sentence explanation so it appears in the gallery.",
-          action: (
-            <Link href="/profile">
-              <Button kind="primary">Upload now</Button>
-            </Link>
-          ),
-        }
-      : {
-          tone: "violet" as const,
-          title: "Take notes as presentations happen",
-          sub: "They're private until you flip the switch.",
-        };
+  const banner = pickBanner({
+    myTopicPresented: myTopic?.state === "presented",
+    polls,
+    submitted: !!ballot?.submitted_at || !!ballot?.locked_at,
+    rankedCount: ballot?.rankings.length ?? 0,
+    totalTopics: topics.length,
+    deadlineAt: votingState?.deadline_at ?? null,
+    submittedAt: ballot?.submitted_at ?? null,
+  });
 
   const publishedCount = counts.published;
 
@@ -110,4 +118,112 @@ export default async function Dashboard({ searchParams }: PageProps) {
       )}
     </div>
   );
+}
+
+interface BannerProps {
+  myTopicPresented: boolean;
+  polls: ReturnType<typeof derivePollsState>;
+  submitted: boolean;
+  rankedCount: number;
+  totalTopics: number;
+  deadlineAt: string | null;
+  submittedAt: string | null;
+}
+
+interface BannerSpec {
+  tone: BannerTone;
+  title: string;
+  sub?: string;
+  action?: ReactNode;
+}
+
+function fmtDate(input: string | null): string {
+  if (!input) return "soon";
+  return new Date(input).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+  });
+}
+
+function fmtDateTime(input: string | null): string {
+  if (!input) return "";
+  return new Date(input).toLocaleString("en-GB", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/**
+ * Banner precedence per the Phase 4 brief:
+ *   1. presenter-amber (own topic in 'presented' state) — wins
+ *   2. polls=closed (regardless of submission) — amber tally-in-progress
+ *   3. polls=open + submitted                  — neutral submitted
+ *   4. polls=open + draft                      — violet voting-open
+ *   5. fallback                                — violet take-notes
+ */
+function pickBanner({
+  myTopicPresented,
+  polls,
+  submitted,
+  rankedCount,
+  totalTopics,
+  deadlineAt,
+  submittedAt,
+}: BannerProps): BannerSpec {
+  if (myTopicPresented) {
+    return {
+      tone: "amber",
+      title: "Your turn — upload your presentation",
+      sub: "Add your art and a 5-7 sentence explanation so it appears in the gallery.",
+      action: (
+        <Link href="/profile">
+          <Button kind="primary">Upload now</Button>
+        </Link>
+      ),
+    };
+  }
+
+  if (polls === "closed") {
+    return {
+      tone: "amber",
+      title: "Polls closed · Tally in progress",
+      sub: "Results land here once the beadle runs the count.",
+    };
+  }
+
+  if (polls === "open" && submitted) {
+    return {
+      tone: "neutral",
+      title: "Ballot submitted",
+      sub: submittedAt
+        ? `Locked at ${fmtDateTime(submittedAt)}. Results post when polls close on ${fmtDate(deadlineAt)}.`
+        : "Results post when polls close.",
+      action: (
+        <Link href="/vote">
+          <Button kind="secondary">View ranking</Button>
+        </Link>
+      ),
+    };
+  }
+
+  if (polls === "open") {
+    return {
+      tone: "violet",
+      title: `Voting open until ${fmtDate(deadlineAt)}`,
+      sub: `You've ranked ${rankedCount} of ${totalTopics}. Your draft saves automatically.`,
+      action: (
+        <Link href="/vote">
+          <Button kind="primary">Continue ranking</Button>
+        </Link>
+      ),
+    };
+  }
+
+  return {
+    tone: "violet",
+    title: "Take notes as presentations happen",
+    sub: "They're private until you flip the switch.",
+  };
 }
