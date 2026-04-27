@@ -1,0 +1,99 @@
+/**
+ * Approximate sentence count: terminal punctuation followed by whitespace
+ * or end-of-string. Won't perfectly handle "e.g." or "Mr. Smith" — used as
+ * a soft guide on the form, not a hard gate, and the same algorithm runs
+ * server-side so behaviour stays consistent.
+ */
+export function countSentences(text: string): number {
+  const trimmed = text.trim();
+  if (!trimmed) return 0;
+  const matches = trimmed.match(/[.!?]+(?=\s|$)/g);
+  return matches ? matches.length : 0;
+}
+
+interface AcceptedArtInput {
+  type: string;
+  name: string;
+  size: number;
+}
+
+export type AcceptedArtCheck =
+  | { ok: true }
+  | { ok: false; reason: string };
+
+const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+
+const ACCEPTED_MIME = new Set([
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+  "application/pdf",
+]);
+
+const ACCEPTED_EXT = new Set([
+  "jpg",
+  "jpeg",
+  "png",
+  "webp",
+  "heic",
+  "heif",
+  "pdf",
+]);
+
+function fileExtension(name: string): string {
+  const dot = name.lastIndexOf(".");
+  if (dot < 0) return "";
+  return name.slice(dot + 1).toLowerCase();
+}
+
+/**
+ * Accept JPG / PNG / WEBP / HEIC / PDF, ≤ 10 MB.
+ *
+ * Both MIME and extension are checked because iOS Safari reports HEIC
+ * uploads inconsistently — `image/heic`, `image/heif`, sometimes empty.
+ * Either matching path is sufficient.
+ */
+export function isAcceptedArtFile(file: AcceptedArtInput): AcceptedArtCheck {
+  if (file.size <= 0) {
+    return { ok: false, reason: "File is empty." };
+  }
+  if (file.size > MAX_BYTES) {
+    return { ok: false, reason: "File is over 10 MB." };
+  }
+
+  const ext = fileExtension(file.name);
+  const mimeOk = ACCEPTED_MIME.has(file.type.toLowerCase());
+  const extOk = ext.length > 0 && ACCEPTED_EXT.has(ext);
+
+  if (!mimeOk && !extOk) {
+    return {
+      ok: false,
+      reason: "File type not accepted. Use JPG, PNG, WEBP, HEIC, or PDF.",
+    };
+  }
+
+  return { ok: true };
+}
+
+/** True if the file is a PDF (by either MIME or extension). */
+export function isPdf(file: AcceptedArtInput): boolean {
+  return (
+    file.type.toLowerCase() === "application/pdf" ||
+    fileExtension(file.name) === "pdf"
+  );
+}
+
+/** Lowercase extension chosen for the storage path. Defaults to mime guess. */
+export function fileExtensionForStorage(file: AcceptedArtInput): string {
+  const ext = fileExtension(file.name);
+  if (ext) return ext;
+  if (file.type === "application/pdf") return "pdf";
+  if (file.type === "image/jpeg") return "jpg";
+  if (file.type === "image/png") return "png";
+  if (file.type === "image/webp") return "webp";
+  if (file.type === "image/heic" || file.type === "image/heif") return "heic";
+  return "bin";
+}
