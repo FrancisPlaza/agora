@@ -3,11 +3,11 @@ import { notFound } from "next/navigation";
 import { ArtPlaceholder } from "@/components/art-placeholder";
 import { NoteEditor } from "@/components/note-editor";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Tabs } from "@/components/ui/tabs";
 import { getMyNote } from "@/lib/data/notes";
 import { getTopicArtUrl } from "@/lib/data/storage";
 import { getTopic } from "@/lib/data/topics";
+import { AddToRankingForm } from "./add-to-ranking-form";
 import { ClassNotes } from "./class-notes";
 
 interface PageProps {
@@ -154,13 +154,9 @@ export default async function TopicDetail({ params, searchParams }: PageProps) {
         )}
       </div>
 
-      {/* Sticky CTA — points to the Phase 4 placeholder for now. */}
+      {/* Sticky CTA — calls addToMyRanking and redirects to /vote?focus=N. */}
       <div className="fixed bottom-0 inset-x-0 bg-white border-t border-line px-4 md:px-8 py-3 flex items-center justify-end gap-3 z-30 md:left-auto md:right-6 md:bottom-6 md:inset-x-auto md:rounded-lg md:border md:shadow-[0_4px_14px_rgba(10,37,64,0.08),0_1px_3px_rgba(10,37,64,0.05)]">
-        <Link href="/vote">
-          <Button kind="primary" icon="vote">
-            Add to my ranking
-          </Button>
-        </Link>
+        <AddToRankingForm topicId={topic.id} />
       </div>
     </div>
   );
