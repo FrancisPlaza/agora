@@ -390,6 +390,7 @@ export type Database = {
     Functions: {
       is_admin: { Args: never; Returns: boolean }
       is_approved: { Args: never; Returns: boolean }
+      save_draft_rankings: { Args: { p_rankings: Json }; Returns: undefined }
       submit_ballot: { Args: { p_rankings: Json }; Returns: undefined }
       write_tally_results: {
         Args: { p_results: Json; p_total_ballots: number }

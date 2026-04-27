@@ -10,8 +10,15 @@ const ERROR_MESSAGES: Record<string, string> = {
   DUPLICATE_RANK: "Duplicate ranks not allowed",
   DUPLICATE_TOPIC: "Duplicate topics not allowed",
   INVALID_TOPIC: "One or more topic IDs are invalid",
-  BALLOT_LOCKED: "Ballot is already locked — contact a beadle to unlock",
+  BALLOT_LOCKED: "Your ballot is locked — contact a beadle to unlock",
 };
+
+function rpcError(error: { message: string }): { error: string } {
+  const code = error.message.trim();
+  return {
+    error: ERROR_MESSAGES[code] ?? `Failed to save ballot: ${error.message}`,
+  };
+}
 
 /**
  * Submit a ballot. Delegates the entire write — validation, ranking
@@ -32,12 +39,22 @@ export async function submitBallot(
     p_rankings: rankings,
   } as never);
 
-  if (error) {
-    const code = error.message.trim();
-    return {
-      error: ERROR_MESSAGES[code] ?? `Failed to submit ballot: ${error.message}`,
-    };
-  }
+  if (error) return rpcError(error);
+  return {};
+}
 
+/**
+ * Save a draft ranking. Sibling to `submitBallot` but does not lock the
+ * ballot or write to audit_log. Empty array is permitted (clears all
+ * rankings without deleting the ballot row).
+ */
+export async function saveDraftRankings(
+  rankings: Array<{ topicId: number; rank: number }>,
+): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("save_draft_rankings", {
+    p_rankings: rankings,
+  } as never);
+  if (error) return rpcError(error);
   return {};
 }
