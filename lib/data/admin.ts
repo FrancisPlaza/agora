@@ -60,15 +60,13 @@ interface VoterRawRow {
   student_id: string;
   status: ProfileStatus;
   is_admin: boolean;
-  topics: Array<{
-    id: number;
-    philosopher: string;
-    theme: string;
-  }>;
-  ballots: Array<{
-    submitted_at: string | null;
-    locked_at: string | null;
-  }>;
+  // Supabase FK embeds return null (not []) when there's no related row.
+  topics:
+    | Array<{ id: number; philosopher: string; theme: string }>
+    | null;
+  ballots:
+    | Array<{ submitted_at: string | null; locked_at: string | null }>
+    | null;
 }
 
 interface AuditRawRow {
@@ -129,7 +127,7 @@ export const getAllVoters = cache(
     if (error || !data) return [];
 
     let rows = (data as unknown as VoterRawRow[]).map<VoterRow>((p) => {
-      const ballot = p.ballots[0];
+      const ballot = p.ballots?.[0] ?? null;
       const ballot_status: BallotStatus = !ballot
         ? "not_started"
         : ballot.submitted_at || ballot.locked_at
@@ -142,7 +140,7 @@ export const getAllVoters = cache(
         student_id: p.student_id,
         status: p.status,
         is_admin: p.is_admin,
-        assigned_topic: p.topics[0] ?? null,
+        assigned_topic: p.topics?.[0] ?? null,
         ballot_status,
       };
     });
