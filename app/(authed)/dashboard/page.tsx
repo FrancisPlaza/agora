@@ -3,9 +3,10 @@ import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Chips } from "@/components/ui/chips";
 import { StatusBanner, type BannerTone } from "@/components/ui/status-banner";
-import { TopicCard } from "@/components/topic-card";
+import { TopicCard, type Medal } from "@/components/topic-card";
 import { getAllTopics, getMyTopic } from "@/lib/data/topics";
 import { getMyNotedTopics } from "@/lib/data/notes";
+import { getResults } from "@/lib/data/results";
 import {
   derivePollsState,
   getMyBallot,
@@ -32,14 +33,27 @@ export default async function Dashboard({ searchParams }: PageProps) {
   const filterParam = (params.filter ?? "all") as Filter;
   const filter: Filter = FILTERS.includes(filterParam) ? filterParam : "all";
 
-  const [topics, myTopic, myNotedTopics, votingState, ballot] =
+  const [topics, myTopic, myNotedTopics, votingState, ballot, results] =
     await Promise.all([
       getAllTopics(),
       getMyTopic(),
       getMyNotedTopics(),
       getVotingState(),
       getMyBallot(),
+      getResults(),
     ]);
+
+  // Build medal map (gold/silver/bronze/4/5) from the tally winners.
+  // Vacant runs (winner === null) skip — no medal for that position.
+  const medalByTopicId = new Map<number, Medal>();
+  if (results) {
+    for (const run of results.runs) {
+      if (run.winner && run.runNum >= 1 && run.runNum <= 5) {
+        medalByTopicId.set(run.winner.id, run.runNum as Medal);
+      }
+    }
+  }
+  const topWinner = results?.runs[0]?.winner ?? null;
 
   const polls = derivePollsState(
     {
@@ -75,6 +89,8 @@ export default async function Dashboard({ searchParams }: PageProps) {
     totalTopics: topics.length,
     deadlineAt: votingState?.deadline_at ?? null,
     submittedAt: ballot?.submitted_at ?? null,
+    resultsPosted: !!results && results.runs.some((r) => r.winner != null),
+    topWinnerName: topWinner?.philosopher ?? null,
   });
 
   const publishedCount = counts.published;
@@ -113,7 +129,12 @@ export default async function Dashboard({ searchParams }: PageProps) {
       ) : (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {visible.map((t) => (
-            <TopicCard key={t.id} topic={t} isMine={t.id === myTopic?.id} />
+            <TopicCard
+              key={t.id}
+              topic={t}
+              isMine={t.id === myTopic?.id}
+              medal={medalByTopicId.get(t.id)}
+            />
           ))}
         </div>
       )}
@@ -130,6 +151,8 @@ interface BannerProps {
   totalTopics: number;
   deadlineAt: string | null;
   submittedAt: string | null;
+  resultsPosted: boolean;
+  topWinnerName: string | null;
 }
 
 interface BannerSpec {
@@ -158,12 +181,13 @@ function fmtDateTime(input: string | null): string {
 }
 
 /**
- * Banner precedence per the Phase 4 brief:
- *   1. presenter-amber (own topic in 'presented' state) — wins
- *   2. polls=closed (regardless of submission) — amber tally-in-progress
- *   3. polls=open + submitted                  — neutral submitted
- *   4. polls=open + draft                      — violet voting-open
- *   5. fallback                                — violet take-notes
+ * Banner precedence — Phase 7 adds the results-posted variant. Order:
+ *   1. presenter-amber (own topic in 'presented' state) — still wins
+ *   2. results-posted (tally has run with a winner)     — success-green
+ *   3. polls=closed (regardless of submission)          — amber tally-in-progress
+ *   4. polls=open + submitted                           — neutral submitted
+ *   5. polls=open + draft                               — violet voting-open
+ *   6. fallback                                         — violet take-notes
  */
 function pickBanner({
   myTopicPresented,
@@ -174,6 +198,8 @@ function pickBanner({
   totalTopics,
   deadlineAt,
   submittedAt,
+  resultsPosted,
+  topWinnerName,
 }: BannerProps): BannerSpec {
   if (myTopicPresented && myTopicId != null) {
     return {
@@ -183,6 +209,21 @@ function pickBanner({
       action: (
         <Link href={`/topic/${myTopicId}/upload`}>
           <Button kind="primary">Upload now</Button>
+        </Link>
+      ),
+    };
+  }
+
+  if (resultsPosted) {
+    return {
+      tone: "success",
+      title: "Results are in.",
+      sub: topWinnerName
+        ? `The class voted ${topWinnerName} best presentation. See the top five.`
+        : "See the top five.",
+      action: (
+        <Link href="/results">
+          <Button kind="primary">View results</Button>
         </Link>
       ),
     };

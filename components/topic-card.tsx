@@ -5,9 +5,37 @@ import { Icon } from "./ui/icon";
 import { getTopicArtUrl } from "@/lib/data/storage";
 import type { TopicView } from "@/lib/data/topics";
 
+export type Medal = 1 | 2 | 3 | 4 | 5;
+
 interface TopicCardProps {
   topic: TopicView;
   isMine?: boolean;
+  medal?: Medal;
+}
+
+const MEDAL_STYLES: Record<Medal, { bg: string; ring: string; label: string }> = {
+  1: { bg: "bg-[#F4C95B] text-[#5A4413]", ring: "ring-[#E0AA2A]", label: "1st" },
+  2: { bg: "bg-[#C8CDD3] text-[#3B4148]", ring: "ring-[#9BA1A8]", label: "2nd" },
+  3: { bg: "bg-[#D1A77C] text-[#4A2E15]", ring: "ring-[#9C7B53]", label: "3rd" },
+  4: { bg: "bg-surface-alt text-text-2", ring: "ring-line", label: "4th" },
+  5: { bg: "bg-surface-alt text-text-2", ring: "ring-line", label: "5th" },
+};
+
+function MedalPill({ medal }: { medal: Medal }) {
+  const s = MEDAL_STYLES[medal];
+  return (
+    <span
+      className={[
+        "inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[11px] font-mono font-semibold ring-1 leading-none",
+        s.bg,
+        s.ring,
+      ].join(" ")}
+      title={`${s.label} place in the class tally`}
+      aria-label={`${s.label} place`}
+    >
+      {medal === 1 ? "★ #1" : `#${medal}`}
+    </span>
+  );
 }
 
 function fmtDate(input: string | null): string {
@@ -43,7 +71,7 @@ function PlainHero({ topic }: { topic: TopicView }) {
   );
 }
 
-export async function TopicCard({ topic, isMine }: TopicCardProps) {
+export async function TopicCard({ topic, isMine, medal }: TopicCardProps) {
   const artUrl =
     topic.state === "published" && topic.art_image_path
       ? await getTopicArtUrl(topic.art_image_path, { w: 400, h: 300 })
@@ -59,9 +87,10 @@ export async function TopicCard({ topic, isMine }: TopicCardProps) {
         "hover:shadow-[0_4px_14px_rgba(10,37,64,0.08),0_1px_3px_rgba(10,37,64,0.05)] hover:border-[#D7DEE7]",
       ].join(" ")}
     >
-      {isMine ? (
-        <div className="absolute top-3 right-3 z-10">
-          <Badge tone="amber">Yours</Badge>
+      {isMine || medal ? (
+        <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1.5">
+          {isMine ? <Badge tone="amber">Yours</Badge> : null}
+          {medal ? <MedalPill medal={medal} /> : null}
         </div>
       ) : null}
 
