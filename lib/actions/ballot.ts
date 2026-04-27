@@ -1,6 +1,8 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getMyBallot } from "@/lib/data/voting";
 
 const ERROR_MESSAGES: Record<string, string> = {
   NOT_AUTHENTICATED: "Not authenticated",
@@ -57,4 +59,39 @@ export async function saveDraftRankings(
   } as never);
   if (error) return rpcError(error);
   return {};
+}
+
+/**
+ * Append a topic to the current draft and redirect to /vote. Used by the
+ * topic-detail "Add to my ranking" CTA.
+ *
+ * TOCTOU note: between the read of the current ballot and the write,
+ * another tab could save a different draft. Acceptable for Phase 4 — we
+ * dedup the topic locally before sending so the worst case is an
+ * idempotent no-op rather than a corrupted ballot.
+ */
+export async function addToMyRanking(
+  topicId: number,
+): Promise<{ error?: string }> {
+  if (!Number.isFinite(topicId) || topicId < 1) {
+    return { error: "Invalid topic." };
+  }
+
+  const ballot = await getMyBallot();
+  const current = ballot?.rankings ?? [];
+
+  // Already ranked — no-op write, just redirect.
+  if (current.some((r) => r.topicId === topicId)) {
+    redirect(`/vote?focus=${topicId}`);
+  }
+
+  const next = [
+    ...current.map((r) => ({ topicId: r.topicId, rank: r.rank })),
+    { topicId, rank: current.length + 1 },
+  ];
+
+  const result = await saveDraftRankings(next);
+  if (result.error) return result;
+
+  redirect(`/vote?focus=${topicId}`);
 }
