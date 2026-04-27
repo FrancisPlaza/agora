@@ -388,10 +388,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_voter: {
+        Args: { p_is_admin?: boolean; p_target: string; p_topic_id?: number }
+        Returns: undefined
+      }
+      assign_topic: {
+        Args: { p_target: string; p_topic_id: number }
+        Returns: undefined
+      }
       is_admin: { Args: never; Returns: boolean }
       is_approved: { Args: never; Returns: boolean }
+      lock_ballots: { Args: never; Returns: undefined }
+      mark_topic_presented: { Args: { p_topic_id: number }; Returns: undefined }
+      open_polls: { Args: { p_at?: string }; Returns: undefined }
+      reject_voter: {
+        Args: { p_reason: string; p_target: string }
+        Returns: undefined
+      }
       save_draft_rankings: { Args: { p_rankings: Json }; Returns: undefined }
+      set_deadline: { Args: { p_at: string }; Returns: undefined }
       submit_ballot: { Args: { p_rankings: Json }; Returns: undefined }
+      unlock_ballot: { Args: { p_target: string }; Returns: undefined }
       write_tally_results: {
         Args: { p_results: Json; p_total_ballots: number }
         Returns: undefined
