@@ -61,13 +61,23 @@ function deriveState(
   return "published";
 }
 
-function toTopicView(row: TopicLookupRow): TopicView {
+function toTopicView(row: TopicLookupRow, classNoteCount: number): TopicView {
   return {
     ...row,
     state: deriveState(row),
     presenter: row.presenter,
-    class_note_count: 0,
+    class_note_count: classNoteCount,
   };
+}
+
+function buildNoteCountMap(
+  rows: ReadonlyArray<{ topic_id: number }> | null,
+): Map<number, number> {
+  const map = new Map<number, number>();
+  for (const row of rows ?? []) {
+    map.set(row.topic_id, (map.get(row.topic_id) ?? 0) + 1);
+  }
+  return map;
 }
 
 /**
@@ -100,16 +110,24 @@ export const getResults = cache(async (): Promise<ResultsView | null> => {
 
   let winnerById = new Map<number, TopicView>();
   if (winnerIds.length > 0) {
-    const { data: topics } = await supabase
-      .from("topics")
-      .select(
-        "*, presenter:profiles!presenter_voter_id(id, full_name)",
-      )
-      .in("id", winnerIds);
+    const [topicsRes, countsRes] = await Promise.all([
+      supabase
+        .from("topics")
+        .select(
+          "*, presenter:profiles!presenter_voter_id(id, full_name)",
+        )
+        .in("id", winnerIds),
+      supabase
+        .from("notes")
+        .select("topic_id")
+        .eq("visibility", "class")
+        .in("topic_id", winnerIds),
+    ]);
+    const counts = buildNoteCountMap(countsRes.data);
     winnerById = new Map(
-      ((topics ?? []) as unknown as TopicLookupRow[]).map((t) => [
+      ((topicsRes.data ?? []) as unknown as TopicLookupRow[]).map((t) => [
         t.id,
-        toTopicView(t),
+        toTopicView(t, counts.get(t.id) ?? 0),
       ]),
     );
   }
@@ -164,16 +182,25 @@ export const getResultsTopicMap = cache(
       }
     }
     if (ids.size === 0) return new Map();
+    const idArray = Array.from(ids);
 
-    const { data: topics } = await supabase
-      .from("topics")
-      .select("*, presenter:profiles!presenter_voter_id(id, full_name)")
-      .in("id", Array.from(ids));
+    const [topicsRes, countsRes] = await Promise.all([
+      supabase
+        .from("topics")
+        .select("*, presenter:profiles!presenter_voter_id(id, full_name)")
+        .in("id", idArray),
+      supabase
+        .from("notes")
+        .select("topic_id")
+        .eq("visibility", "class")
+        .in("topic_id", idArray),
+    ]);
+    const counts = buildNoteCountMap(countsRes.data);
 
     return new Map(
-      ((topics ?? []) as unknown as TopicLookupRow[]).map((t) => [
+      ((topicsRes.data ?? []) as unknown as TopicLookupRow[]).map((t) => [
         t.id,
-        toTopicView(t),
+        toTopicView(t, counts.get(t.id) ?? 0),
       ]),
     );
   },
