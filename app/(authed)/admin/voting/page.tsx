@@ -75,7 +75,7 @@ export default async function AdminVoting() {
             <div className="text-[13px] text-text-2 mb-2">
               Currently open at: <b className="text-text">{fmtDateTime(voting?.polls_open_at ?? null)}</b>
             </div>
-            <OpenPollsButton />
+            <OpenPollsButton tallyExists={!!voting?.tally_run_at} />
             {summary.force_locked_drafts > 0 ? (
               <div className="mt-3 pt-3 border-t border-line-2">
                 <div className="text-[13px] text-text-2 mb-2">
@@ -84,7 +84,10 @@ export default async function AdminVoting() {
                   force-locked. Reopening polls alone won&rsquo;t restore edit
                   access.
                 </div>
-                <ReopenAndUnlockButton count={summary.force_locked_drafts} />
+                <ReopenAndUnlockButton
+                  count={summary.force_locked_drafts}
+                  tallyExists={!!voting?.tally_run_at}
+                />
               </div>
             ) : null}
           </div>

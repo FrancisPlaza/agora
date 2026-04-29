@@ -6,6 +6,7 @@ import { tally, Ballot, Topic } from "@/lib/irv";
 const ERROR_MESSAGES: Record<string, string> = {
   NOT_AUTHENTICATED: "Not authenticated",
   ADMIN_REQUIRED: "Admin access required",
+  POLLS_NOT_LOCKED: "Polls must be closed before running the tally.",
 };
 
 /**

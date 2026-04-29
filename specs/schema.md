@@ -576,7 +576,8 @@ Required functions:
 - `submit_ballot(rankings jsonb)` — validates ranks (no duplicates, all topic_ids valid, voter has assigned topic), writes rankings, sets `ballots.submitted_at`. Returns error if already submitted.
 - `unlock_ballot(target_voter_id uuid)` — admin-only. Clears `ballots.submitted_at` and `ballots.locked_at` for the target voter. Existing rankings preserved. Voter must explicitly resubmit. Audit logged.
 - `lock_ballots()` — sets `voting_state.polls_locked = true`, sets `locked_at` on all unsubmitted ballots, writes audit log.
-- `run_tally()` — runs sequential IRV (see `irv-spec.md`), populates `tally_results`, writes audit log. Idempotent — re-running clears `tally_results` first within a transaction. Confirmed safe to re-run after deadline extension.
+- `open_polls(at timestamptz)` — admin-only. Sets `voting_state.polls_open_at`, clears `polls_locked` / `polls_locked_at` / `polls_locked_by`, AND clears `tally_run_at` + every `tally_results` row so a reopened poll doesn't leave the dashboard banner or `/results` showing stale results (the bug 0019 fixed). Audit-logs `{opened_at, tally_invalidated}` so the timeline can show whether a reopen actually invalidated cached results or was a no-op.
+- `run_tally()` — runs sequential IRV (see `irv-spec.md`), populates `tally_results`, writes audit log. Idempotent — re-running clears `tally_results` first within a transaction. Confirmed safe to re-run after deadline extension. Refuses to run unless polls are locked or past deadline (`POLLS_NOT_LOCKED`) — defense-in-depth backstop on top of the admin UI's disabled Run-tally button. Mirrors the polls gate on `submit_ballot`.
 - `set_deadline(deadline timestamptz)` — admin-only. Updates `voting_state.deadline_at`. Audit logged.
 
 ---
