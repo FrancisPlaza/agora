@@ -37,6 +37,12 @@ interface UploadFormProps {
   initialArtExplanation: string;
   /** Signed URL for the existing artwork preview, used when editing. */
   existingPreviewUrl: string | null;
+  /**
+   * Submit-button copy. The page knows the topic state; the form just
+   * renders. Default ("Save and publish") covers the original first-time
+   * 'presented' case.
+   */
+  submitLabel?: string;
 }
 
 interface FormState {
@@ -56,6 +62,7 @@ export function UploadForm({
   initialArtTitle,
   initialArtExplanation,
   existingPreviewUrl,
+  submitLabel,
 }: UploadFormProps) {
   const [artTitle, setArtTitle] = useState(initialArtTitle);
   const [artExplanation, setArtExplanation] = useState(initialArtExplanation);
@@ -287,7 +294,9 @@ export function UploadForm({
             </Button>
           </Link>
           <Button kind="primary" type="submit" disabled={isPending || renderingPdf}>
-            {isPending ? "Saving…" : isEdit ? "Update" : "Save and publish"}
+            {isPending
+              ? "Saving…"
+              : submitLabel ?? (isEdit ? "Update" : "Save and publish")}
           </Button>
         </div>
       </form>

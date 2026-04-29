@@ -61,11 +61,38 @@ function deriveState(
   return "published";
 }
 
-function toTopicView(row: TopicLookupRow, classNoteCount: number): TopicView {
+/**
+ * Phase 7.6 mask. The podium and the rounds-table look up topics; if a
+ * winner uploaded their art before the beadle marked them presented and
+ * the tally was run anyway, render the placeholder rather than leak the
+ * uploaded image. Edge case — beadle should mark every topic before
+ * running the count — but the defence is cheap.
+ */
+function maskArtForViewer(
+  t: TopicLookupRow,
+  viewerId: string | null,
+): TopicLookupRow {
+  if (t.presented_at) return t;
+  if (viewerId && t.presenter_voter_id === viewerId) return t;
   return {
-    ...row,
-    state: deriveState(row),
-    presenter: row.presenter,
+    ...t,
+    art_title: null,
+    art_explanation: null,
+    art_image_path: null,
+    art_uploaded_at: null,
+  };
+}
+
+function toTopicView(
+  row: TopicLookupRow,
+  classNoteCount: number,
+  viewerId: string | null,
+): TopicView {
+  const masked = maskArtForViewer(row, viewerId);
+  return {
+    ...masked,
+    state: deriveState(masked),
+    presenter: masked.presenter,
     class_note_count: classNoteCount,
   };
 }
@@ -110,7 +137,7 @@ export const getResults = cache(async (): Promise<ResultsView | null> => {
 
   let winnerById = new Map<number, TopicView>();
   if (winnerIds.length > 0) {
-    const [topicsRes, countsRes] = await Promise.all([
+    const [topicsRes, countsRes, userRes] = await Promise.all([
       supabase
         .from("topics")
         .select(
@@ -122,12 +149,14 @@ export const getResults = cache(async (): Promise<ResultsView | null> => {
         .select("topic_id")
         .eq("visibility", "class")
         .in("topic_id", winnerIds),
+      supabase.auth.getUser(),
     ]);
     const counts = buildNoteCountMap(countsRes.data);
+    const viewerId = userRes.data.user?.id ?? null;
     winnerById = new Map(
       ((topicsRes.data ?? []) as unknown as TopicLookupRow[]).map((t) => [
         t.id,
-        toTopicView(t, counts.get(t.id) ?? 0),
+        toTopicView(t, counts.get(t.id) ?? 0, viewerId),
       ]),
     );
   }
@@ -184,7 +213,7 @@ export const getResultsTopicMap = cache(
     if (ids.size === 0) return new Map();
     const idArray = Array.from(ids);
 
-    const [topicsRes, countsRes] = await Promise.all([
+    const [topicsRes, countsRes, userRes] = await Promise.all([
       supabase
         .from("topics")
         .select("*, presenter:profiles!presenter_voter_id(id, full_name)")
@@ -194,13 +223,15 @@ export const getResultsTopicMap = cache(
         .select("topic_id")
         .eq("visibility", "class")
         .in("topic_id", idArray),
+      supabase.auth.getUser(),
     ]);
     const counts = buildNoteCountMap(countsRes.data);
+    const viewerId = userRes.data.user?.id ?? null;
 
     return new Map(
       ((topicsRes.data ?? []) as unknown as TopicLookupRow[]).map((t) => [
         t.id,
-        toTopicView(t, counts.get(t.id) ?? 0),
+        toTopicView(t, counts.get(t.id) ?? 0, viewerId),
       ]),
     );
   },

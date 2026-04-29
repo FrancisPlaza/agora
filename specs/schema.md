@@ -75,12 +75,13 @@ create table topics (
   created_at          timestamptz not null default now(),
   updated_at          timestamptz not null default now(),
 
-  -- a presenter assignment requires the FK; presented requires assigned;
-  -- published requires presented + art fields populated
+  -- a presenter assignment requires the FK; published requires all art
+  -- fields populated. Phase 7.6 dropped published_requires_presented so
+  -- that presenters can upload art before the beadle marks them
+  -- presented; the storage read policy hides the file from non-
+  -- presenters until presented_at is set.
   constraint presented_requires_presenter
     check (presented_at is null or presenter_voter_id is not null),
-  constraint published_requires_presented
-    check (art_uploaded_at is null or presented_at is not null),
   constraint published_requires_all_art
     check (
       art_uploaded_at is null or (
@@ -216,10 +217,16 @@ create index audit_log_actor_idx  on audit_log(actor_id, created_at desc);
 
 ## Triggers
 
+**Convention: every `security definer` function sets `search_path` explicitly.** Without it, the function runs under the auth role's default search path, which doesn't reliably include `public`, and unqualified table references fail at runtime with "relation profiles does not exist". This applies to the trigger functions below, the helper functions in the RLS section, and the server-side functions in `0008` / `0009`.
+
 ### Auto-create `profiles` on `auth.users` insert
 
 ```sql
-create function handle_new_user() returns trigger language plpgsql security definer as $$
+create function handle_new_user() returns trigger
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
 begin
   insert into profiles (id, email, full_name, student_id, status)
   values (new.id, new.email,
@@ -237,7 +244,11 @@ create trigger on_auth_user_created
 ### Promote to `pending_approval` on email confirmation
 
 ```sql
-create function handle_email_confirmed() returns trigger language plpgsql security definer as $$
+create function handle_email_confirmed() returns trigger
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
 begin
   if new.email_confirmed_at is not null and old.email_confirmed_at is null then
     update profiles set status = 'pending_approval' where id = new.id;
@@ -279,14 +290,27 @@ alter table tally_results enable row level security;
 alter table audit_log     enable row level security;
 ```
 
-Helper functions:
+Helper functions. Two non-obvious requirements, both motivated by RLS:
+
+- **`security definer`.** The helpers query `profiles` to read the caller's status. With RLS on, that inner SELECT is itself subject to the `profiles_approved_read_others` policy, which calls `is_approved()` again — infinite recursion (Postgres errors with SQLSTATE 54001 once stack depth blows). Marking the helpers `security definer` lets the inner query bypass RLS, breaking the loop. The helpers still only return a boolean derived from `auth.uid()`, so they can't leak information.
+- **`set search_path`** for the same reason as the trigger functions above.
 
 ```sql
-create function is_approved() returns boolean language sql stable as $$
+create function is_approved() returns boolean
+language sql
+stable
+security definer
+set search_path = public, auth
+as $$
   select coalesce((select status = 'approved' from profiles where id = auth.uid()), false);
 $$;
 
-create function is_admin() returns boolean language sql stable as $$
+create function is_admin() returns boolean
+language sql
+stable
+security definer
+set search_path = public, auth
+as $$
   select coalesce((select is_admin and status = 'approved' from profiles where id = auth.uid()), false);
 $$;
 ```
@@ -475,11 +499,22 @@ insert into storage.buckets (id, name, public) values ('presentations', 'present
 Policies:
 
 ```sql
--- approved voters can read all presentation files
+-- approved voters can read presentation files for topics that are
+-- already 'presented'; the assigned presenter can also read their own
+-- pre-presented uploads (Phase 7.6).
 create policy presentations_read on storage.objects
-  for select using (bucket_id = 'presentations' and is_approved());
+  for select using (
+    bucket_id = 'presentations'
+    and is_approved()
+    and exists (
+      select 1 from topics t
+      where t.id = (split_part(name, '/', 1))::int
+        and (t.presented_at is not null or t.presenter_voter_id = auth.uid())
+    )
+  );
 
--- only the assigned presenter can upload, and only when topic is in 'presented' state
+-- only the assigned presenter can upload. Phase 7.6 dropped the
+-- presented_at gate so presenters can upload early.
 create policy presentations_presenter_write on storage.objects
   for insert with check (
     bucket_id = 'presentations'
@@ -487,7 +522,6 @@ create policy presentations_presenter_write on storage.objects
       select 1 from topics t
       where t.id = (split_part(name, '/', 1))::int
         and t.presenter_voter_id = auth.uid()
-        and t.presented_at is not null
     )
   );
 

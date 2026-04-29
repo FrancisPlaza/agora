@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Chips } from "@/components/ui/chips";
 import { StatusBanner, type BannerTone } from "@/components/ui/status-banner";
 import { TopicCard, type Medal } from "@/components/topic-card";
-import { getAllTopics, getMyTopic } from "@/lib/data/topics";
+import { getAllTopics, getMyTopic, type TopicState } from "@/lib/data/topics";
 import { getMyNotedTopics } from "@/lib/data/notes";
 import { getResults } from "@/lib/data/results";
 import {
@@ -81,8 +81,10 @@ export default async function Dashboard({ searchParams }: PageProps) {
   });
 
   const banner = pickBanner({
-    myTopicPresented: myTopic?.state === "presented",
+    myTopicState: myTopic?.state ?? null,
     myTopicId: myTopic?.id ?? null,
+    myTopicPhilosopher: myTopic?.philosopher ?? null,
+    myTopicArtUploadedAt: myTopic?.art_uploaded_at ?? null,
     polls,
     submitted: !!ballot?.submitted_at || !!ballot?.locked_at,
     rankedCount: ballot?.rankings.length ?? 0,
@@ -143,8 +145,10 @@ export default async function Dashboard({ searchParams }: PageProps) {
 }
 
 interface BannerProps {
-  myTopicPresented: boolean;
+  myTopicState: TopicState | null;
   myTopicId: number | null;
+  myTopicPhilosopher: string | null;
+  myTopicArtUploadedAt: string | null;
   polls: ReturnType<typeof derivePollsState>;
   submitted: boolean;
   rankedCount: number;
@@ -181,17 +185,24 @@ function fmtDateTime(input: string | null): string {
 }
 
 /**
- * Banner precedence — Phase 7 adds the results-posted variant. Order:
- *   1. presenter-amber (own topic in 'presented' state) — still wins
- *   2. results-posted (tally has run with a winner)     — success-green
- *   3. polls=closed (regardless of submission)          — amber tally-in-progress
- *   4. polls=open + submitted                           — neutral submitted
- *   5. polls=open + draft                               — violet voting-open
- *   6. fallback                                         — violet take-notes
+ * Banner precedence — Phase 7.6 splits the presenter cases. Order:
+ *   1. presenter-amber: my topic is 'presented' (beadle marked) — upload prompt
+ *   2. presenter-violet: my topic is 'assigned', no art yet     — soft early-upload prompt
+ *   3. presenter-violet: my topic is 'assigned', art uploaded   — confirmation, edit-only
+ *   4. results-posted (tally has run with a winner)             — success-green
+ *   5. polls=closed (regardless of submission)                  — amber tally-in-progress
+ *   6. polls=open + submitted                                   — neutral submitted
+ *   7. polls=open + draft                                       — violet voting-open
+ *   8. fallback                                                 — violet take-notes
+ *
+ * The amber-presenter variant still wins over polls-related variants;
+ * the two new violet sub-cases are softer and slot just below it.
  */
 function pickBanner({
-  myTopicPresented,
+  myTopicState,
   myTopicId,
+  myTopicPhilosopher,
+  myTopicArtUploadedAt,
   polls,
   submitted,
   rankedCount,
@@ -201,7 +212,7 @@ function pickBanner({
   resultsPosted,
   topWinnerName,
 }: BannerProps): BannerSpec {
-  if (myTopicPresented && myTopicId != null) {
+  if (myTopicState === "presented" && myTopicId != null) {
     return {
       tone: "amber",
       title: "Your turn — upload your presentation",
@@ -209,6 +220,33 @@ function pickBanner({
       action: (
         <Link href={`/topic/${myTopicId}/upload`}>
           <Button kind="primary">Upload now</Button>
+        </Link>
+      ),
+    };
+  }
+
+  if (myTopicState === "assigned" && myTopicId != null) {
+    if (!myTopicArtUploadedAt) {
+      return {
+        tone: "violet",
+        title: myTopicPhilosopher
+          ? `You're presenting ${myTopicPhilosopher}.`
+          : "You're presenting soon.",
+        sub: "You can upload your art early — it'll appear in the gallery once your beadle marks you presented.",
+        action: (
+          <Link href={`/topic/${myTopicId}/upload`}>
+            <Button kind="primary">Upload now</Button>
+          </Link>
+        ),
+      };
+    }
+    return {
+      tone: "violet",
+      title: "Your art is ready.",
+      sub: "It'll appear in the gallery once your beadle marks you presented.",
+      action: (
+        <Link href={`/topic/${myTopicId}/upload`}>
+          <Button kind="secondary">Edit upload</Button>
         </Link>
       ),
     };

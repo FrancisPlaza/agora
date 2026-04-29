@@ -64,11 +64,10 @@ export async function uploadPresentation(
   if (topic.presenter_voter_id !== user.id) {
     return { error: "Only the assigned presenter can upload." };
   }
-  if (!topic.presented_at) {
-    return {
-      error: "Your beadle hasn't marked this topic as presented yet.",
-    };
-  }
+  // Phase 7.6: assigned topics may also upload (pre-presented). The
+  // storage write policy enforces presenter-match without requiring
+  // presented_at; the read policy hides the file from non-presenters
+  // until the beadle marks the topic presented.
 
   // ── Metadata validation ──────────────────────────────────────────────
   if (!artTitle) return { error: "Art title is required." };
