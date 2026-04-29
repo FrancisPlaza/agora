@@ -77,6 +77,9 @@ export function NoteEditor({
     });
   }
 
+  const bodyEmpty = body.trim() === "";
+  const shareDisabled = bodyEmpty && !shared;
+
   useEffect(() => {
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
@@ -103,16 +106,22 @@ export function NoteEditor({
       />
       <div className="mt-2.5 flex items-center justify-between gap-3">
         <div className="text-xs text-text-2 truncate min-w-0">{indicator}</div>
-        <Switch
-          on={shared}
-          onChange={onToggleShared}
-          label={
-            <span className="inline-flex items-center gap-1.5">
-              <Icon name={shared ? "unlock" : "lock"} size={13} />
-              {shared ? "Shared with class" : "Private"}
-            </span>
-          }
-        />
+        <div className="flex items-center gap-2.5 shrink-0">
+          {shareDisabled ? (
+            <span className="text-xs text-text-2">Write something to share.</span>
+          ) : null}
+          <Switch
+            on={shared}
+            onChange={onToggleShared}
+            disabled={shareDisabled}
+            label={
+              <span className="inline-flex items-center gap-1.5">
+                <Icon name={shared ? "unlock" : "lock"} size={13} />
+                {shared ? "Shared with class" : "Private"}
+              </span>
+            }
+          />
+        </div>
       </div>
       {error ? (
         <div className="mt-2 text-xs text-danger">{error}</div>

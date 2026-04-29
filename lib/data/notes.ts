@@ -62,6 +62,10 @@ export const getClassNotes = cache(
     if (error || !data) return [];
     return (data as ClassNoteRow[])
       .filter((n): n is ClassNoteRow & { author: { id: string; full_name: string } } => n.author !== null)
+      // Empty/whitespace-only shared notes shouldn't surface to the class.
+      // The new server gate in setNoteVisibility prevents new ones; this
+      // filter handles any historical rows that slipped through.
+      .filter((n) => n.body.trim() !== "")
       .map((n) => ({
         id: n.id,
         topic_id: n.topic_id,

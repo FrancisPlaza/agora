@@ -54,12 +54,14 @@ interface SetVisibilityInput {
 }
 
 /**
- * Flip a note's visibility. If no note exists yet, create an empty-body
- * note with the requested visibility — lets a user share before writing.
+ * Flip a note's visibility. If flipping to `class`, refuse when the
+ * existing body is empty/whitespace — empty shared notes used to surface
+ * as blank cards on every classmate's "Class notes" tab. The note-editor
+ * client disables the switch already; this is the defensive backstop.
  *
- * `body` is intentionally absent from the payload so that on conflict the
- * existing body stays put. On insert it falls back to the column default
- * (empty string).
+ * `body` is intentionally absent from the upsert payload so that on
+ * conflict the existing body stays put. On insert (visibility=private,
+ * no row yet) the column default (empty string) applies.
  */
 export async function setNoteVisibility({
   topicId,
@@ -77,6 +79,18 @@ export async function setNoteVisibility({
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated." };
+
+  if (visibility === "class") {
+    const { data: existing } = await supabase
+      .from("notes")
+      .select("body")
+      .eq("voter_id", user.id)
+      .eq("topic_id", topicId)
+      .maybeSingle();
+    if (!existing || existing.body.trim() === "") {
+      return { error: "Write a note before sharing it with the class." };
+    }
+  }
 
   const { error } = await supabase.from("notes").upsert(
     {
