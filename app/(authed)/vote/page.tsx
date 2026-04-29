@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { RankingEditor } from "@/components/ranking-editor";
 import { RankingThumbnail } from "@/components/ranking-thumbnail";
+import { Button } from "@/components/ui/button";
 import { StatusBanner } from "@/components/ui/status-banner";
 import { requireApproved } from "@/lib/auth";
 import { getAllTopics, getMyTopic } from "@/lib/data/topics";
@@ -100,15 +102,29 @@ export default async function Vote({ searchParams }: PageProps) {
 
   // ── Polls closed ──────────────────────────────────────────────────────
   if (polls === "closed") {
+    const tallyDone = !!votingState?.tally_run_at;
     return (
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-4 md:py-6 pb-10">
         <Header />
         <div className="mb-5">
-          <StatusBanner
-            tone="amber"
-            title="Polls closed"
-            sub="Tally in progress. Results post when the beadle runs the count."
-          />
+          {tallyDone ? (
+            <StatusBanner
+              tone="success"
+              title="Results are in"
+              sub="View the top five."
+              action={
+                <Link href="/results">
+                  <Button kind="primary">View results</Button>
+                </Link>
+              }
+            />
+          ) : (
+            <StatusBanner
+              tone="amber"
+              title="Polls closed"
+              sub="Awaiting the tally."
+            />
+          )}
         </div>
         <ReadOnlyRanking
           ranked={ranked}

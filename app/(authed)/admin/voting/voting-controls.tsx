@@ -15,6 +15,7 @@ import {
 
 interface DeadlineFormProps {
   initialIso: string | null;
+  disabled?: boolean;
 }
 
 /**
@@ -30,7 +31,7 @@ function isoToDatetimeLocal(iso: string | null): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export function DeadlineForm({ initialIso }: DeadlineFormProps) {
+export function DeadlineForm({ initialIso, disabled = false }: DeadlineFormProps) {
   const [value, setValue] = useState(isoToDatetimeLocal(initialIso));
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
@@ -59,10 +60,11 @@ export function DeadlineForm({ initialIso }: DeadlineFormProps) {
           type="datetime-local"
           value={value}
           onChange={(e) => setValue(e.target.value)}
+          disabled={disabled}
         />
       </Field>
       <div className="flex items-center gap-3">
-        <Button kind="primary" onClick={fire} disabled={isPending}>
+        <Button kind="primary" onClick={fire} disabled={isPending || disabled}>
           {isPending ? "Saving…" : "Save deadline"}
         </Button>
         {error ? (
@@ -75,13 +77,23 @@ export function DeadlineForm({ initialIso }: DeadlineFormProps) {
   );
 }
 
-export function OpenPollsButton({ tallyExists }: { tallyExists: boolean }) {
+export function OpenPollsButton({
+  tallyExists,
+  disabled = false,
+}: {
+  tallyExists: boolean;
+  disabled?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   return (
     <div className="flex flex-col gap-2">
-      <Button kind="secondary" onClick={() => setOpen(true)}>
+      <Button
+        kind="secondary"
+        onClick={() => setOpen(true)}
+        disabled={disabled}
+      >
         Open polls now
       </Button>
       {error ? <span className="text-xs text-danger">{error}</span> : null}
@@ -179,11 +191,16 @@ export function ReopenAndUnlockButton({
   );
 }
 
-export function LockBallotsButton() {
+export function LockBallotsButton({ disabled = false }: { disabled?: boolean }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button kind="solid-danger" icon="lock" onClick={() => setOpen(true)}>
+      <Button
+        kind="solid-danger"
+        icon="lock"
+        onClick={() => setOpen(true)}
+        disabled={disabled}
+      >
         Lock ballots now
       </Button>
       <ConfirmDialog

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { getAdminSummary } from "@/lib/data/admin";
 import { derivePollsState, getVotingState } from "@/lib/data/voting";
@@ -33,6 +34,16 @@ export default async function AdminVoting() {
     },
     new Date(),
   );
+
+  // Derived flags drive every disabled state below. Computed once at the
+  // page level and threaded into the controls — components stay dumb.
+  // isLocked covers both "admin pressed Lock" and "deadline passed";
+  // tallyComplete is the "results are cached" signal (cleared by
+  // open_polls per migration 0019); hasOpened goes true on first open
+  // and stays true (lock_ballots / open_polls don't clear it).
+  const isLocked = polls === "closed";
+  const tallyComplete = !!voting?.tally_run_at;
+  const hasOpened = !!voting?.polls_open_at;
 
   const submitted = summary.ballots_submitted;
   const total = summary.total_voters;
@@ -70,12 +81,23 @@ export default async function AdminVoting() {
           <div className="text-text-2 text-xs font-medium uppercase tracking-[0.04em] mb-3">
             Deadline & open
           </div>
-          <DeadlineForm initialIso={voting?.deadline_at ?? null} />
+          {isLocked ? (
+            <div className="text-text-2 text-[13px] mb-2">
+              Deadline locked. Reopen polls to change.
+            </div>
+          ) : null}
+          <DeadlineForm
+            initialIso={voting?.deadline_at ?? null}
+            disabled={isLocked}
+          />
           <div className="mt-4 pt-4 border-t border-line-2">
             <div className="text-[13px] text-text-2 mb-2">
               Currently open at: <b className="text-text">{fmtDateTime(voting?.polls_open_at ?? null)}</b>
             </div>
-            <OpenPollsButton tallyExists={!!voting?.tally_run_at} />
+            <OpenPollsButton
+              tallyExists={tallyComplete}
+              disabled={!isLocked && hasOpened}
+            />
             {summary.force_locked_drafts > 0 ? (
               <div className="mt-3 pt-3 border-t border-line-2">
                 <div className="text-[13px] text-text-2 mb-2">
@@ -86,7 +108,7 @@ export default async function AdminVoting() {
                 </div>
                 <ReopenAndUnlockButton
                   count={summary.force_locked_drafts}
-                  tallyExists={!!voting?.tally_run_at}
+                  tallyExists={tallyComplete}
                 />
               </div>
             ) : null}
@@ -97,14 +119,29 @@ export default async function AdminVoting() {
           <div className="text-text-2 text-xs font-medium uppercase tracking-[0.04em] mb-3">
             Lock & tally
           </div>
-          <div className="text-[13px] text-text-2 mb-3">
-            Locked at: <b className="text-text">{fmtDateTime(voting?.polls_locked_at ?? null)}</b>
-          </div>
           <div className="flex flex-col gap-2.5">
-            <LockBallotsButton />
-            <RunTallyButton disabled={!voting?.polls_locked} />
+            {isLocked ? (
+              <div className="text-text-2 text-[13px]">
+                {voting?.polls_locked_at
+                  ? `Polls locked at ${fmtDateTime(voting.polls_locked_at)}.`
+                  : "Polls closed by deadline."}
+              </div>
+            ) : null}
+            <LockBallotsButton disabled={isLocked || !hasOpened} />
+            {tallyComplete ? (
+              <div className="text-text-2 text-[13px] mt-2">
+                Tally complete at {fmtDateTime(voting?.tally_run_at ?? null)}.{" "}
+                <Link
+                  href="/results"
+                  className="text-violet-600 hover:underline"
+                >
+                  View results →
+                </Link>
+              </div>
+            ) : null}
+            <RunTallyButton disabled={!isLocked || tallyComplete} />
           </div>
-          {!voting?.polls_locked ? (
+          {!isLocked && !tallyComplete ? (
             <div className="text-text-2 text-xs mt-2">
               Lock ballots before running the tally.
             </div>
