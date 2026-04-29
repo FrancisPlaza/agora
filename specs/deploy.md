@@ -97,6 +97,7 @@ Auth → Providers → **Email**: keep magic link enabled. Disable email-confirm
    | `SUPABASE_SERVICE_ROLE_KEY` | from step 1 | **server-only** — never use in a `NEXT_PUBLIC_*` |
    | `NEXT_PUBLIC_SITE_URL` | the sandbox Vercel URL (no trailing slash) | needed for the magic-link callback |
    | `NEXT_PUBLIC_BEADLE_CONTACT` | placeholder for the rejected screen, e.g. `Beadle Lim · jlim@sanbeda.edu.ph` | newline-separated lines accepted |
+   | `NEXT_PUBLIC_REPO_URL` | `https://github.com/FrancisPlaza/agora` (or your fork) | landing footer "Source on GitHub" link; leave empty to omit |
 
 4. Click **Deploy**. The first build takes ~2–3 minutes.
 

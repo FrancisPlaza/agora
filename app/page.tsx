@@ -64,8 +64,42 @@ export default function Landing() {
       </div>
 
       <footer className="border-t border-line px-8 py-5 text-text-2 text-xs flex justify-between flex-wrap gap-2">
-        <span>Built for the JDN101 cohort, A.Y. 2025–26</span>
+        <span>Built with ❤️ by Francis Plaza.</span>
+        <Provenance />
       </footer>
     </main>
   );
+}
+
+/**
+ * Right-aligned source-and-commit line. Three render modes:
+ *  - Both env vars present: "Source on GitHub · agora@<sha>" with both
+ *    halves linking (repo home and the specific commit).
+ *  - Only NEXT_PUBLIC_COMMIT_SHA: "agora@<sha>" plain text.
+ *  - Neither: "agora@dev" (local dev fallback from next.config.ts).
+ */
+function Provenance() {
+  const repo = process.env.NEXT_PUBLIC_REPO_URL ?? "";
+  const sha = process.env.NEXT_PUBLIC_COMMIT_SHA ?? "dev";
+  const shortSha = sha.slice(0, 7);
+  const linkClass = "hover:text-text underline-offset-2 hover:underline";
+  if (repo) {
+    return (
+      <span>
+        <a href={repo} target="_blank" rel="noreferrer" className={linkClass}>
+          Source on GitHub
+        </a>
+        {" · "}
+        <a
+          href={`${repo}/commit/${sha}`}
+          target="_blank"
+          rel="noreferrer"
+          className={linkClass}
+        >
+          agora@{shortSha}
+        </a>
+      </span>
+    );
+  }
+  return <span>agora@{shortSha}</span>;
 }
