@@ -29,7 +29,7 @@ export function ProfileForm({ initialName, email, studentId }: Props) {
         />
       </Field>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Field label="School email" hint="Read-only">
+        <Field label="Email" hint="Read-only">
           <Input value={email} readOnly tabIndex={-1} />
         </Field>
         <Field label="Student ID" hint="Read-only">

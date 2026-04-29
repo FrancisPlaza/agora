@@ -20,7 +20,7 @@ export default async function AwaitingEmail({ searchParams }: PageProps) {
   return (
     <PublicCard title="Confirm your email">
       <p className="text-text-2 mb-5">
-        We sent a confirmation link to your school inbox. Open it on this device
+        We sent a confirmation link to your inbox. Open it on this device
         to finish.
       </p>
       <div className="bg-surface-alt rounded px-4 py-3.5 flex gap-3 items-center">

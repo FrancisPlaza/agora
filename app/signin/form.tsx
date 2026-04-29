@@ -15,16 +15,16 @@ export function SignInForm({ initialError }: { initialError?: string }) {
   return (
     <>
       <p className="text-text-2 mb-5">
-        We&rsquo;ll send a one-time link to your school email.
+        We&rsquo;ll send a one-time link to your email.
       </p>
       <form action={formAction} className="flex flex-col gap-3.5">
-        <Field label="School email" htmlFor="email">
+        <Field label="Email" htmlFor="email">
           <Input
             id="email"
             name="email"
             type="email"
             required
-            placeholder="you@sanbeda.edu.ph"
+            placeholder="niccolo@machiavelli.com"
             defaultValue={state?.values?.email ?? ""}
           />
         </Field>

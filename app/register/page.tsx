@@ -39,13 +39,13 @@ export default function Register() {
             defaultValue={state?.values?.fullName ?? ""}
           />
         </Field>
-        <Field label="School email" hint="@sanbeda.edu.ph" htmlFor="email">
+        <Field label="Email" htmlFor="email">
           <Input
             id="email"
             name="email"
             type="email"
             required
-            placeholder="you@sanbeda.edu.ph"
+            placeholder="niccolo@machiavelli.com"
             defaultValue={state?.values?.email ?? ""}
           />
         </Field>
