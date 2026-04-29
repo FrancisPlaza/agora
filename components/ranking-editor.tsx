@@ -458,7 +458,6 @@ function RankedPane({
       </h3>
       {ranked.length === 0 ? (
         <div className="rounded border border-dashed border-line p-8 text-center text-text-2">
-          <div className="font-serif text-3xl opacity-40 mb-2">Nº</div>
           <div className="font-medium text-text">No rankings yet</div>
           <div className="mt-1 text-[13px]">
             Drag a topic from the left to start your ranking.

@@ -27,7 +27,7 @@ export default function Register() {
       }
     >
       <p className="text-text-2 mb-5">
-        Your beadle will approve your account before you can vote.
+        Your beadle will approve your account before you can join Agora.
       </p>
       <form action={formAction} className="flex flex-col gap-3.5">
         <Field label="Full name" htmlFor="fullName">
@@ -54,7 +54,7 @@ export default function Register() {
             id="studentId"
             name="studentId"
             required
-            placeholder="2024-0000"
+            placeholder="2025000100"
             defaultValue={state?.values?.studentId ?? ""}
           />
         </Field>

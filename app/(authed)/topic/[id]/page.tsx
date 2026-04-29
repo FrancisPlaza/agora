@@ -93,7 +93,7 @@ export default async function TopicDetail({ params, searchParams }: PageProps) {
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-center p-6">
             <div className="font-mono text-[11px] text-text-2 tracking-[0.1em] uppercase mb-3">
-              Número {String(topic.order_num).padStart(2, "0")}
+              Number {String(topic.order_num).padStart(2, "0")}
             </div>
             <div className="font-serif text-3xl md:text-4xl font-semibold tracking-tight">
               {topic.philosopher}

@@ -31,7 +31,7 @@ export default function Landing() {
       <div className="relative z-10 flex-1 flex items-center justify-center px-6 py-10">
         <div className="max-w-3xl text-center">
           <div className="text-[11px] font-mono uppercase tracking-[0.12em] text-text-2 mb-6">
-            San Beda College Alabang · JDN101
+            San Beda College Alabang School of Law · JDN101
           </div>
           <h1 className="font-serif font-semibold tracking-tight leading-[1.05] m-0 text-[clamp(40px,6vw,64px)]">
             Ranked-choice voting
@@ -40,8 +40,8 @@ export default function Landing() {
           </h1>
           <p className="text-[17px] text-text-2 leading-relaxed mt-5 max-w-xl mx-auto">
             One philosopher. One piece of art. Five minutes at the front of the
-            room. Agora is the gallery you build together — and the ballot you
-            settle it with.
+            class. Agora is the gallery where the class can deliberate
+            democratically and visualise consensus together.
           </p>
           <div className="flex justify-center gap-2.5 mt-8 flex-wrap">
             <Link href="/register">
@@ -54,13 +54,6 @@ export default function Landing() {
                 I already have one
               </Button>
             </Link>
-          </div>
-          <div className="flex justify-center gap-6 mt-16 text-text-2 text-[13px] flex-wrap">
-            <div>32 topics</div>
-            <div aria-hidden>·</div>
-            <div>Sequential IRV</div>
-            <div aria-hidden>·</div>
-            <div>Beadle-mediated</div>
           </div>
         </div>
       </div>

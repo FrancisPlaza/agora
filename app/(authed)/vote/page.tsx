@@ -150,13 +150,13 @@ export default async function Vote({ searchParams }: PageProps) {
       <Header />
       {votingState?.deadline_at ? (
         <p className="text-text-2 mt-1 mb-5">
-          Drag your favourites to the right. Order them best to worst.
+          Drag your favourites to the right. Order them most liked to least.
           Anything left in the unranked column counts as no preference.
           Voting closes {fmtDate(votingState.deadline_at)}.
         </p>
       ) : (
         <p className="text-text-2 mt-1 mb-5">
-          Drag your favourites to the right. Order them best to worst.
+          Drag your favourites to the right. Order them most liked to least.
           Anything left in the unranked column counts as no preference.
         </p>
       )}
