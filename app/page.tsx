@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AgoraWordmark } from "@/components/ui/agora-wordmark";
 import { Button } from "@/components/ui/button";
+import { HeroAnimation } from "@/components/hero-animation";
 
 const HERO_BG: React.CSSProperties = {
   background: [
@@ -13,8 +14,9 @@ const HERO_BG: React.CSSProperties = {
 
 export default function Landing() {
   return (
-    <main className="min-h-dvh flex flex-col" style={HERO_BG}>
-      <header className="px-8 py-5 flex items-center justify-between">
+    <main className="relative min-h-dvh flex flex-col" style={HERO_BG}>
+      <HeroAnimation />
+      <header className="relative z-10 px-8 py-5 flex items-center justify-between">
         <AgoraWordmark size={20} />
         <div className="flex items-center gap-2">
           <Link href="/signin">
@@ -26,7 +28,7 @@ export default function Landing() {
         </div>
       </header>
 
-      <div className="flex-1 flex items-center justify-center px-6 py-10">
+      <div className="relative z-10 flex-1 flex items-center justify-center px-6 py-10">
         <div className="max-w-3xl text-center">
           <div className="text-[11px] font-mono uppercase tracking-[0.12em] text-text-2 mb-6">
             San Beda College Alabang · JDN101
@@ -63,7 +65,7 @@ export default function Landing() {
         </div>
       </div>
 
-      <footer className="border-t border-line px-8 py-5 text-text-2 text-xs flex justify-between flex-wrap gap-2">
+      <footer className="relative z-10 border-t border-line px-8 py-5 text-text-2 text-xs flex justify-between flex-wrap gap-2">
         <span>Built with ❤️ by Francis Plaza.</span>
         <Provenance />
       </footer>
