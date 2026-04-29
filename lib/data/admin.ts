@@ -4,6 +4,18 @@ import type { Database } from "@/lib/supabase/database.types";
 
 type ProfileStatus = Database["public"]["Enums"]["profile_status"];
 
+/**
+ * PostgREST returns one-to-one FK embeds as either a single object or
+ * (depending on version + the SQL shape) a one-element array. Both shapes
+ * occur in practice for `profiles → topics (UNIQUE presenter_voter_id)`
+ * and `profiles → ballots (UNIQUE voter_id)`. Type the embed defensively
+ * as `T | T[] | null` and unwrap through this helper.
+ */
+function unwrapEmbed<T>(value: T | T[] | null | undefined): T | null {
+  if (value == null) return null;
+  return Array.isArray(value) ? (value[0] ?? null) : value;
+}
+
 export interface PendingApproval {
   id: string;
   full_name: string;
@@ -66,11 +78,15 @@ interface VoterRawRow {
   student_id: string;
   status: ProfileStatus;
   is_admin: boolean;
-  // Supabase FK embeds return null (not []) when there's no related row.
+  // PostgREST flips between object and one-element array depending on
+  // version + query shape. UNIQUE FKs are conceptually one-to-one in
+  // both directions; unwrapEmbed handles either case.
   topics:
+    | { id: number; philosopher: string; theme: string }
     | Array<{ id: number; philosopher: string; theme: string }>
     | null;
   ballots:
+    | { submitted_at: string | null; locked_at: string | null }
     | Array<{ submitted_at: string | null; locked_at: string | null }>
     | null;
 }
@@ -133,7 +149,7 @@ export const getAllVoters = cache(
     if (error || !data) return [];
 
     let rows = (data as unknown as VoterRawRow[]).map<VoterRow>((p) => {
-      const ballot = p.ballots?.[0] ?? null;
+      const ballot = unwrapEmbed(p.ballots);
       const ballot_status: BallotStatus = !ballot
         ? "not_started"
         : ballot.submitted_at || ballot.locked_at
@@ -146,7 +162,7 @@ export const getAllVoters = cache(
         student_id: p.student_id,
         status: p.status,
         is_admin: p.is_admin,
-        assigned_topic: p.topics?.[0] ?? null,
+        assigned_topic: unwrapEmbed(p.topics),
         ballot_status,
       };
     });
