@@ -351,12 +351,15 @@ create policy profiles_admin_update on profiles
 create policy topics_approved_read on topics
   for select using (is_approved());
 
--- presenter can update art fields when their topic is in 'presented' state
+-- presenter can update art fields anytime after assignment.
+-- Phase 7.6 widened the upload flow to allow pre-presented uploads;
+-- migration 0018 dropped the `presented_at is not null` clause that
+-- silently denied those updates and produced orphan storage files.
+-- Data integrity for the `published` lifecycle stays enforced by the
+-- `published_requires_all_art` CHECK constraint on the topics table.
 create policy topics_presenter_update_art on topics
-  for update using (
-    presenter_voter_id = auth.uid()
-    and presented_at is not null
-  ) with check (
+  for update using (presenter_voter_id = auth.uid())
+  with check (
     presenter_voter_id = auth.uid()
     -- (column-level write restrictions enforced at server-action level)
   );

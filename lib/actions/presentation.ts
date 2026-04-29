@@ -188,13 +188,43 @@ export async function uploadPresentation(
     update.art_uploaded_at = new Date().toISOString();
   }
 
-  const { error: updateError } = await supabase
+  // .select("id") makes a silent RLS denial visible. Without the chain,
+  // Postgres returns 0 rows affected with no error and the JS client
+  // returns { error: null }, which used to produce a "successful" upload
+  // that silently left art fields null (the Phase 7.6 → migration 0018
+  // bug). The chain costs one row of one column.
+  const { data: updatedRows, error: updateError } = await supabase
     .from("topics")
     .update(update)
-    .eq("id", topicId);
+    .eq("id", topicId)
+    .select("id");
 
   if (updateError) {
     return { error: `Failed to update topic: ${updateError.message}` };
+  }
+  if (!updatedRows || updatedRows.length === 0) {
+    // Best-effort orphan cleanup. The pre-write list+remove already
+    // wiped any prior files, so anything under {topicId}/ now is what
+    // we just uploaded. Edge case: if the topic was previously
+    // published and a future RLS regression denies the row update mid-
+    // flow, this leaves the DB row pointing at the prior path that we
+    // already deleted. The user gets a clear error and a retry repaves
+    // storage from the next pre-write list+remove.
+    if (hasNewFile) {
+      const { data: orphans } = await supabase.storage
+        .from("presentations")
+        .list(`${topicId}/`);
+      if (orphans && orphans.length > 0) {
+        await supabase.storage
+          .from("presentations")
+          .remove(orphans.map((o) => `${topicId}/${o.name}`));
+      }
+    }
+    return {
+      error:
+        "Could not save your presentation — the topic row was not updated. " +
+        "If this persists, ask a beadle to check your topic assignment.",
+    };
   }
 
   revalidatePath("/dashboard");
