@@ -48,17 +48,21 @@ export function TopicRowActions({
   const [presentingError, setPresentingError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  // Row-level reasons take precedence over the polls-locked reason —
-  // they're more specific, and a presented topic stays locked even
-  // after a reopen. Function-level: 0020's TOPIC_ALREADY_PRESENTED for
-  // the row case; 0021's POLLS_LOCKED for the polls case. Copy is
-  // harmonised with the voters view ("Already presented.").
+  // Row-specific reason — survives the polls-lock state, since a
+  // presented topic stays locked even after a reopen. "Polls locked"
+  // is global and shown via the absence of buttons across the page,
+  // not per-row text.
   const reassignReason: string | null =
     state === "presented" || state === "published"
       ? "Already presented."
-      : pollsLocked
-        ? "Polls locked. Reopen to reassign."
-        : null;
+      : null;
+
+  // Hide Reassign entirely (vs. disabled-with-note) when the row is
+  // unactionable for any reason. Function-level POLLS_LOCKED gate
+  // (0021) and TOPIC_ALREADY_PRESENTED (0020) are the direct-RPC
+  // backstops.
+  const hideReassign =
+    state === "presented" || state === "published" || pollsLocked;
 
   // Filter the topic's own current presenter out of the dropdown — the
   // no-op short-circuit catches it server-side, but UX-cleaner to hide.
@@ -94,14 +98,15 @@ export function TopicRowActions({
       {reassignReason ? (
         <span className="text-xs text-text-2 italic">{reassignReason}</span>
       ) : null}
-      <Button
-        kind="ghost"
-        size="sm"
-        onClick={() => setReassignOpen(true)}
-        disabled={reassignReason !== null}
-      >
-        Reassign
-      </Button>
+      {!hideReassign ? (
+        <Button
+          kind="ghost"
+          size="sm"
+          onClick={() => setReassignOpen(true)}
+        >
+          Reassign
+        </Button>
+      ) : null}
 
       <ConfirmDialog
         open={reassignOpen}

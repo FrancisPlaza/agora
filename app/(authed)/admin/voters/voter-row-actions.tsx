@@ -48,28 +48,34 @@ export function VoterRowActions({
     (t) => t.id !== currentTopicId,
   );
 
-  // Row-level reasons (already-presented) take precedence over the
-  // polls-locked reason — they're more specific, and a presented topic
-  // stays locked even after a reopen.
+  // Row-specific reason — survives the polls-lock state, since a
+  // presented topic stays locked even after a reopen. "Polls locked"
+  // is global and shown via the absence of buttons across the page,
+  // not per-row text.
   const reassignReason: string | null = currentTopicPresented
     ? "Already presented."
-    : pollsLocked
-      ? "Polls locked. Reopen to reassign."
-      : null;
+    : null;
+
+  // Hide Reassign entirely (vs. disabled-with-note) when the row is
+  // unactionable for any reason. Function-level POLLS_LOCKED gate
+  // (0021) and STUDENT_ALREADY_PRESENTED (0020) are the direct-RPC
+  // backstops.
+  const hideReassign = currentTopicPresented || pollsLocked;
 
   return (
     <div className="flex justify-end gap-2 flex-wrap items-center">
       {reassignReason ? (
         <span className="text-xs text-text-2 italic">{reassignReason}</span>
       ) : null}
-      <Button
-        kind="ghost"
-        size="sm"
-        onClick={() => setReassignOpen(true)}
-        disabled={reassignReason !== null}
-      >
-        Reassign
-      </Button>
+      {!hideReassign ? (
+        <Button
+          kind="ghost"
+          size="sm"
+          onClick={() => setReassignOpen(true)}
+        >
+          Reassign
+        </Button>
+      ) : null}
       {ballot_status === "submitted" && !pollsLocked ? (
         <Button
           kind="ghost"
