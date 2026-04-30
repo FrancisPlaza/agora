@@ -74,11 +74,26 @@ export default async function Dashboard({ searchParams }: PageProps) {
     mynotes: topics.filter((t) => myNotedSet.has(t.id)).length,
   };
 
-  const visible = topics.filter((t) => {
+  const filtered = topics.filter((t) => {
     if (filter === "all") return true;
     if (filter === "mynotes") return myNotedSet.has(t.id);
     return t.state === filter;
   });
+
+  // Pin the user's own topic to position 0 of the filtered grid.
+  // Pinning AFTER the filter means selecting "Unassigned" while the
+  // user is assigned correctly hides their card; selecting a filter
+  // their topic matches keeps it pinned to the top of that filtered
+  // set. Defensive against a stale myTopic that isn't in topics —
+  // findIndex === -1 falls back to the unmodified array.
+  const visible = (() => {
+    if (!myTopic) return filtered;
+    const idx = filtered.findIndex((t) => t.id === myTopic.id);
+    if (idx === -1) return filtered;
+    const next = [...filtered];
+    const [own] = next.splice(idx, 1);
+    return [own, ...next];
+  })();
 
   const banner = pickBanner({
     myTopicState: myTopic?.state ?? null,

@@ -1,9 +1,7 @@
 import Link from "next/link";
-import { ArtPlaceholder } from "./art-placeholder";
-import { Badge } from "./ui/badge";
-import { Icon } from "./ui/icon";
+import { Badge, type BadgeTone } from "./ui/badge";
 import { getTopicArtUrl } from "@/lib/data/storage";
-import type { TopicView } from "@/lib/data/topics";
+import type { TopicState, TopicView } from "@/lib/data/topics";
 
 export type Medal = 1 | 2 | 3 | 4 | 5;
 
@@ -19,6 +17,14 @@ const MEDAL_STYLES: Record<Medal, { bg: string; ring: string; label: string }> =
   3: { bg: "bg-[#D1A77C] text-[#4A2E15]", ring: "ring-[#9C7B53]", label: "3rd" },
   4: { bg: "bg-surface-alt text-text-2", ring: "ring-line", label: "4th" },
   5: { bg: "bg-surface-alt text-text-2", ring: "ring-line", label: "5th" },
+};
+
+// Footer right-side status pill, keyed by topic state. Unassigned is
+// omitted (no pill rendered).
+const STATUS_PILL: Partial<Record<TopicState, { tone: BadgeTone; label: string }>> = {
+  assigned: { tone: "neutral", label: "Upcoming" },
+  presented: { tone: "amber", label: "Presented" },
+  published: { tone: "success", label: "Published" },
 };
 
 function MedalPill({ medal }: { medal: Medal }) {
@@ -38,36 +44,66 @@ function MedalPill({ medal }: { medal: Medal }) {
   );
 }
 
-function fmtDate(input: string | null): string {
-  if (!input) return "";
-  return new Date(input).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-  });
+/**
+ * Top-left card chrome: the order-number pill. Visible on every card
+ * across all four states. `bg-white/90` reads on both white-background
+ * unpublished heroes and over published artwork without a backdrop
+ * blur. The subtle ring + monospace numerals match the existing card
+ * typography.
+ */
+function OrderPill({ orderNum }: { orderNum: number }) {
+  return (
+    <span className="absolute top-3 left-3 z-10 inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-mono font-semibold tabular-nums tracking-[0.04em] bg-white/90 text-text-2 ring-1 ring-line/60 leading-none">
+      Nº {String(orderNum).padStart(2, "0")}
+    </span>
+  );
 }
 
+/**
+ * Hero used for unassigned / assigned / presented states. Muted text
+ * on a pale or white background. The order-number pill now sits as
+ * card-level chrome (top-left), so this layout is just the philosopher
+ * + theme stack centred at the bottom.
+ */
 function PlainHero({ topic }: { topic: TopicView }) {
-  // Hero used for unassigned / assigned / presented states. Muted text on
-  // a pale or white background. Mirrors the prototype's `.topic-card__hero`.
   return (
     <div
       className={[
-        "h-full flex flex-col justify-between p-4",
+        "h-full flex flex-col justify-end p-4",
         topic.state === "unassigned" ? "bg-[#FAFCFE]" : "bg-white",
       ].join(" ")}
     >
-      <div className="font-mono text-[11px] text-text-2 tabular-nums tracking-[0.04em]">
-        Nº {String(topic.order_num).padStart(2, "0")}
+      <div className="font-serif text-[22px] font-semibold leading-snug tracking-tight">
+        {topic.philosopher}
       </div>
-      <div>
-        <div className="font-serif text-[22px] font-semibold leading-snug tracking-tight">
-          {topic.philosopher}
-        </div>
-        <div className="font-serif italic text-[13px] text-text-2 mt-1">
-          {topic.theme}
-        </div>
+      <div className="font-serif italic text-[13px] text-text-2 mt-1">
+        {topic.theme}
       </div>
     </div>
+  );
+}
+
+/**
+ * Fallback backdrop for published cards whose storage URL didn't
+ * resolve. Mirrors the layered-radial idiom used by the landing
+ * hero — keeps the visual brand cohesive and gives the bottom
+ * overlay something interesting to sit on top of (vs. a flat solid
+ * fill or a self-labelled placeholder that would conflict with the
+ * overlay text).
+ */
+function PublishedFallbackBackdrop() {
+  return (
+    <div
+      className="absolute inset-0"
+      style={{
+        background: [
+          "radial-gradient(ellipse 80% 60% at 25% 30%, rgba(99,91,255,0.20), transparent 60%)",
+          "radial-gradient(ellipse 70% 60% at 75% 70%, rgba(184,134,11,0.10), transparent 60%)",
+          "linear-gradient(180deg, #FAFAFE, #EEECFB)",
+        ].join(", "),
+      }}
+      aria-hidden
+    />
   );
 }
 
@@ -76,6 +112,8 @@ export async function TopicCard({ topic, isMine, medal }: TopicCardProps) {
     topic.state === "published" && topic.art_image_path
       ? await getTopicArtUrl(topic.art_image_path, { w: 400, h: 300 })
       : null;
+
+  const statusPill = STATUS_PILL[topic.state];
 
   return (
     <Link
@@ -87,6 +125,8 @@ export async function TopicCard({ topic, isMine, medal }: TopicCardProps) {
         "hover:shadow-[0_4px_14px_rgba(10,37,64,0.08),0_1px_3px_rgba(10,37,64,0.05)] hover:border-[#D7DEE7]",
       ].join(" ")}
     >
+      <OrderPill orderNum={topic.order_num} />
+
       {isMine || medal ? (
         <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1.5">
           {isMine ? <Badge tone="amber">Yours</Badge> : null}
@@ -94,23 +134,38 @@ export async function TopicCard({ topic, isMine, medal }: TopicCardProps) {
         </div>
       ) : null}
 
-      <div className="aspect-[4/3] overflow-hidden">
+      <div className="aspect-[4/3] overflow-hidden relative">
         {topic.state === "published" ? (
-          artUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={artUrl}
-              alt={topic.art_title ?? topic.theme}
-              className="w-full h-full object-cover"
+          <>
+            {artUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={artUrl}
+                alt={topic.art_title ?? topic.theme}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            ) : (
+              <PublishedFallbackBackdrop />
+            )}
+            {/* Bottom darkening gradient — readability lever for the
+                text overlay. Sandbox-tunable: nudge to black/75 if
+                specific artwork makes the overlay hard to read. */}
+            <div
+              className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-b from-transparent to-black/65 pointer-events-none"
+              aria-hidden
             />
-          ) : (
-            <ArtPlaceholder
-              orderNum={topic.order_num}
-              philosopher={topic.philosopher}
-              theme={topic.theme}
-              artTitle={topic.art_title}
-            />
-          )
+            {/* Philosopher + theme overlay. Single-line truncation
+                so long values don't wrap into the artwork; full text
+                is still on the topic detail page. */}
+            <div className="absolute inset-x-0 bottom-0 px-4 pb-3 pt-2 text-white">
+              <div className="font-serif font-semibold text-[17px] leading-tight tracking-tight truncate [text-shadow:0_1px_2px_rgba(0,0,0,0.4)]">
+                {topic.philosopher}
+              </div>
+              <div className="font-serif italic text-[12px] text-white/85 truncate mt-0.5">
+                {topic.theme}
+              </div>
+            </div>
+          </>
         ) : (
           <PlainHero topic={topic} />
         )}
@@ -120,29 +175,13 @@ export async function TopicCard({ topic, isMine, medal }: TopicCardProps) {
         <span className="text-xs text-text-2 truncate flex-1 min-w-0">
           {topic.state === "unassigned" ? (
             <span className="italic">Presenter TBA</span>
-          ) : topic.state === "assigned" ? (
-            <>
-              {topic.presenter?.full_name}
-              {topic.scheduled_for ? ` · ${fmtDate(topic.scheduled_for)}` : ""}
-            </>
-          ) : topic.state === "presented" ? (
-            <>Presented {fmtDate(topic.presented_at)}</>
           ) : (
             <>by {topic.presenter?.full_name}</>
           )}
         </span>
 
-        {topic.state === "assigned" ? (
-          <Badge tone="neutral">Upcoming</Badge>
-        ) : topic.state === "presented" ? (
-          <span className="text-xs text-violet-600 font-medium inline-flex items-center gap-1">
-            <Icon name="note" size={12} />
-            Take notes
-          </span>
-        ) : topic.state === "published" && topic.class_note_count > 0 ? (
-          <Badge tone="neutral" icon="note">
-            {topic.class_note_count}
-          </Badge>
+        {statusPill ? (
+          <Badge tone={statusPill.tone}>{statusPill.label}</Badge>
         ) : null}
       </div>
     </Link>
