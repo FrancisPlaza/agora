@@ -264,11 +264,13 @@ positions: 3
 Expected:
 
 - Run 1 round 1: all tied at 3, total 9, no majority. Eliminate highest orderNum = 3.
-- Run 1 round 2: 1=3, 2=3. Total 6. No majority. Eliminate higher orderNum = 2.
-- Run 1 round 3: 1=3. Winner = 1. (Single candidate left with at least one vote.)
-- Run 2 (active = {2,3}): 
-  - Round 1: 2=0, 3=0 (all ballots' only preference was 1, which is now removed and ballots are exhausted). Winner = null.
-- Run 3 same: winner = null.
+- Run 1 round 2: 1=3, 2=3. Three [3] ballots exhaust. totalActive=6. No majority. Eliminate higher orderNum = 2.
+- Run 1 round 3: 1=3. Six ballots exhausted ([2] and [3] groups). Single candidate remaining with votes. Winner = 1.
+- Run 2 (active = {2, 3}):
+  - Round 1: 2=3, 3=3. Three [1] ballots exhaust. totalActive=6. Tied. Eliminate higher orderNum = 3.
+  - Round 2: 2=3. Single candidate with votes. Winner = 2.
+- Run 3 (active = {3}):
+  - Round 1: 3=3. Six ballots exhausted ([1] and [2] groups). Winner = 3.
 
 ### Test 4 — Partial rankings with transfers
 
