@@ -61,22 +61,17 @@ function OrderPill({ orderNum }: { orderNum: number }) {
 
 /**
  * Backdrop for any card without uploaded artwork — every state except
- * `published` with a working signed URL. Mirrors the layered-radial
- * idiom used by the landing hero (violet + amber over a pale linear
- * base) so the visual brand stays cohesive across the gallery. The
- * bottom darkening gradient + text overlay then layer on top, giving
- * a uniform card structure regardless of art presence.
+ * `published` with a working signed URL. Saturated brand-violet linear
+ * gradient (calibrated a tier lighter than the design reference) so
+ * cards read as confident brand chrome rather than a near-white wash.
+ * The bottom darkening gradient + white text overlay layer on top.
  */
 function NoArtBackdrop() {
   return (
     <div
       className="absolute inset-0"
       style={{
-        background: [
-          "radial-gradient(ellipse 80% 60% at 25% 30%, rgba(99,91,255,0.20), transparent 60%)",
-          "radial-gradient(ellipse 70% 60% at 75% 70%, rgba(184,134,11,0.10), transparent 60%)",
-          "linear-gradient(180deg, #FAFAFE, #EEECFB)",
-        ].join(", "),
+        background: "linear-gradient(135deg, #7E7DF0 0%, #B79DE3 100%)",
       }}
       aria-hidden
     />
