@@ -24,6 +24,13 @@ interface Props {
   state: TopicState;
   hadArt: boolean;
   currentPresenterId: string | null;
+  /**
+   * True when polls are locked, deadline has passed, or a tally is
+   * cached. Reassigning past this point would silently substitute a
+   * presenter for committed ballots. Migration 0021's POLLS_LOCKED gate
+   * is the function-level backstop.
+   */
+  reassignBlocked: boolean;
   reassignableVoters: VoterOption[];
 }
 
@@ -33,6 +40,7 @@ export function TopicRowActions({
   state,
   hadArt,
   currentPresenterId,
+  reassignBlocked,
   reassignableVoters,
 }: Props) {
   const [reassignOpen, setReassignOpen] = useState(false);
@@ -40,9 +48,16 @@ export function TopicRowActions({
   const [presentingError, setPresentingError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  // Topic is locked from reassignment once it's been presented. UI gates
-  // here; migration 0020's TOPIC_ALREADY_PRESENTED is the backstop.
-  const reassignLocked = state === "presented" || state === "published";
+  // Row-level reasons take precedence over the polls-locked reason —
+  // they're more specific, and a presented topic stays locked even
+  // after a reopen. Function-level: 0020's TOPIC_ALREADY_PRESENTED for
+  // the row case; 0021's POLLS_LOCKED for the polls case.
+  const reassignReason: string | null =
+    state === "presented" || state === "published"
+      ? "Locked — already presented."
+      : reassignBlocked
+        ? "Polls locked. Reopen to reassign."
+        : null;
 
   // Filter the topic's own current presenter out of the dropdown — the
   // no-op short-circuit catches it server-side, but UX-cleaner to hide.
@@ -75,16 +90,14 @@ export function TopicRowActions({
           Mark presented
         </Button>
       ) : null}
-      {reassignLocked ? (
-        <span className="text-xs text-text-2 italic">
-          Locked — already presented.
-        </span>
+      {reassignReason ? (
+        <span className="text-xs text-text-2 italic">{reassignReason}</span>
       ) : null}
       <Button
         kind="ghost"
         size="sm"
         onClick={() => setReassignOpen(true)}
-        disabled={reassignLocked}
+        disabled={reassignReason !== null}
       >
         Reassign
       </Button>

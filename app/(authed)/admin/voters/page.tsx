@@ -7,6 +7,7 @@ import {
   getReassignableTopics,
   type BallotStatus,
 } from "@/lib/data/admin";
+import { derivePollsState, getVotingState } from "@/lib/data/voting";
 import type { Database } from "@/lib/supabase/database.types";
 import { VoterRowActions } from "./voter-row-actions";
 
@@ -56,10 +57,25 @@ export default async function AdminVoters({ searchParams }: PageProps) {
       ? undefined
       : (filter as ProfileStatus | "admins");
 
-  const [voters, reassignableTopics] = await Promise.all([
+  const [voters, reassignableTopics, voting] = await Promise.all([
     getAllVoters({ statusFilter }),
     getReassignableTopics(),
+    getVotingState(),
   ]);
+
+  // Reassignment is blocked once ballots are committed (polls locked,
+  // deadline passed, OR a tally cached). Reopening polls clears all
+  // three flags, so this gate un-blocks itself. Mirrors the function-
+  // level POLLS_LOCKED gate in migration 0021.
+  const polls = derivePollsState(
+    {
+      polls_locked: voting?.polls_locked ?? false,
+      polls_open_at: voting?.polls_open_at ?? null,
+      deadline_at: voting?.deadline_at ?? null,
+    },
+    new Date(),
+  );
+  const reassignBlocked = polls === "closed" || !!voting?.tally_run_at;
 
   return (
     <div>
@@ -166,6 +182,7 @@ export default async function AdminVoters({ searchParams }: PageProps) {
                           hasArt={false /* admin voter list doesn't carry art state — handled in /admin/topics */}
                           currentTopicId={v.assigned_topic?.id ?? null}
                           currentTopicPresented={!!v.assigned_topic?.presented_at}
+                          reassignBlocked={reassignBlocked}
                           reassignableTopics={reassignableTopics}
                         />
                       ) : null}

@@ -17,6 +17,8 @@ const ERROR_MESSAGES: Record<string, string> = {
     "This student has already presented and can't be reassigned. Their topic is locked.",
   TOPIC_ALREADY_PRESENTED:
     "This topic has already been presented and can't be reassigned to a new presenter.",
+  POLLS_LOCKED:
+    "Polls are locked. Reopen polls to allow reassignment.",
 };
 
 function rpcError(error: { message: string }): { error: string } {

@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Chips } from "@/components/ui/chips";
 import { getAllVoters } from "@/lib/data/admin";
 import { getAllTopics, type TopicState } from "@/lib/data/topics";
+import { derivePollsState, getVotingState } from "@/lib/data/voting";
 import { TopicRowActions } from "./topic-row-actions";
 
 const STATE_TONE: Record<TopicState, BadgeTone> = {
@@ -47,10 +48,25 @@ export default async function AdminTopics({ searchParams }: PageProps) {
     ? filterParam
     : "all";
 
-  const [topics, voters] = await Promise.all([
+  const [topics, voters, voting] = await Promise.all([
     getAllTopics(),
     getAllVoters({ statusFilter: "approved" }),
+    getVotingState(),
   ]);
+
+  // Reassignment is blocked once ballots are committed (polls locked,
+  // deadline passed, OR a tally cached). Mirrors the function-level
+  // POLLS_LOCKED gate in migration 0021. Reopening polls clears all
+  // three flags, so this gate un-blocks itself.
+  const polls = derivePollsState(
+    {
+      polls_locked: voting?.polls_locked ?? false,
+      polls_open_at: voting?.polls_open_at ?? null,
+      deadline_at: voting?.deadline_at ?? null,
+    },
+    new Date(),
+  );
+  const reassignBlocked = polls === "closed" || !!voting?.tally_run_at;
 
   // For reassignment, valid targets are approved voters who EITHER have
   // no current topic OR have a current topic that hasn't been presented
@@ -144,6 +160,7 @@ export default async function AdminTopics({ searchParams }: PageProps) {
                       state={t.state}
                       hadArt={!!t.art_uploaded_at}
                       currentPresenterId={t.presenter_voter_id ?? null}
+                      reassignBlocked={reassignBlocked}
                       reassignableVoters={reassignableVoters}
                     />
                   </td>

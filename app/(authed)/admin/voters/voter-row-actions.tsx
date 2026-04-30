@@ -14,6 +14,13 @@ interface Props {
   hasArt: boolean;
   currentTopicId: number | null;
   currentTopicPresented: boolean;
+  /**
+   * True when polls are locked, deadline has passed, or a tally is
+   * cached. Reassigning past this point would silently substitute a
+   * presenter for committed ballots. Migration 0021's POLLS_LOCKED gate
+   * is the function-level backstop.
+   */
+  reassignBlocked: boolean;
   reassignableTopics: UnassignedTopic[];
 }
 
@@ -24,6 +31,7 @@ export function VoterRowActions({
   hasArt,
   currentTopicId,
   currentTopicPresented,
+  reassignBlocked,
   reassignableTopics,
 }: Props) {
   const [reassignOpen, setReassignOpen] = useState(false);
@@ -37,16 +45,25 @@ export function VoterRowActions({
     (t) => t.id !== currentTopicId,
   );
 
+  // Row-level reasons (already-presented) take precedence over the
+  // polls-locked reason — they're more specific, and a presented topic
+  // stays locked even after a reopen.
+  const reassignReason: string | null = currentTopicPresented
+    ? "Already presented."
+    : reassignBlocked
+      ? "Polls locked. Reopen to reassign."
+      : null;
+
   return (
     <div className="flex justify-end gap-2 flex-wrap items-center">
-      {currentTopicPresented ? (
-        <span className="text-xs text-text-2 italic">Already presented.</span>
+      {reassignReason ? (
+        <span className="text-xs text-text-2 italic">{reassignReason}</span>
       ) : null}
       <Button
         kind="ghost"
         size="sm"
         onClick={() => setReassignOpen(true)}
-        disabled={currentTopicPresented}
+        disabled={reassignReason !== null}
       >
         Reassign
       </Button>
