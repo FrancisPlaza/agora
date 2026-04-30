@@ -29,6 +29,13 @@ const STATUS_TONE: Record<ProfileStatus, BadgeTone> = {
   rejected: "danger",
 };
 
+const STATUS_LABEL: Record<ProfileStatus, string> = {
+  approved: "Approved",
+  pending_email: "Pending email",
+  pending_approval: "Pending approval",
+  rejected: "Rejected",
+};
+
 const BALLOT_TONE: Record<BallotStatus, BadgeTone> = {
   submitted: "success",
   draft: "violet",
@@ -149,7 +156,7 @@ export default async function AdminVoters({ searchParams }: PageProps) {
                     </td>
                     <td className="px-3 py-3 align-middle">
                       <Badge tone={STATUS_TONE[v.status]}>
-                        {v.status.replace("_", " ")}
+                        {STATUS_LABEL[v.status]}
                       </Badge>
                     </td>
                     <td className="px-3 py-3 align-middle text-[13px]">
