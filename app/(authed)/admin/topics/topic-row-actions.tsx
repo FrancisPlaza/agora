@@ -27,10 +27,10 @@ interface Props {
   /**
    * True when polls are locked, deadline has passed, or a tally is
    * cached. Reassigning past this point would silently substitute a
-   * presenter for committed ballots. Migration 0021's POLLS_LOCKED gate
-   * is the function-level backstop.
+   * presenter for committed ballots. Function-level POLLS_LOCKED gate
+   * (migrations 0021 + 0022) is the backstop.
    */
-  reassignBlocked: boolean;
+  pollsLocked: boolean;
   reassignableVoters: VoterOption[];
 }
 
@@ -40,7 +40,7 @@ export function TopicRowActions({
   state,
   hadArt,
   currentPresenterId,
-  reassignBlocked,
+  pollsLocked,
   reassignableVoters,
 }: Props) {
   const [reassignOpen, setReassignOpen] = useState(false);
@@ -51,11 +51,12 @@ export function TopicRowActions({
   // Row-level reasons take precedence over the polls-locked reason —
   // they're more specific, and a presented topic stays locked even
   // after a reopen. Function-level: 0020's TOPIC_ALREADY_PRESENTED for
-  // the row case; 0021's POLLS_LOCKED for the polls case.
+  // the row case; 0021's POLLS_LOCKED for the polls case. Copy is
+  // harmonised with the voters view ("Already presented.").
   const reassignReason: string | null =
     state === "presented" || state === "published"
-      ? "Locked — already presented."
-      : reassignBlocked
+      ? "Already presented."
+      : pollsLocked
         ? "Polls locked. Reopen to reassign."
         : null;
 

@@ -54,10 +54,10 @@ export default async function AdminTopics({ searchParams }: PageProps) {
     getVotingState(),
   ]);
 
-  // Reassignment is blocked once ballots are committed (polls locked,
-  // deadline passed, OR a tally cached). Mirrors the function-level
-  // POLLS_LOCKED gate in migration 0021. Reopening polls clears all
-  // three flags, so this gate un-blocks itself.
+  // pollsLocked captures the union: manual lock OR deadline passed OR
+  // tally cached. Mirrors the function-level POLLS_LOCKED gate
+  // (migrations 0021 + 0022). Reopening polls clears all three flags
+  // via 0019, so this un-blocks itself automatically.
   const polls = derivePollsState(
     {
       polls_locked: voting?.polls_locked ?? false,
@@ -66,7 +66,7 @@ export default async function AdminTopics({ searchParams }: PageProps) {
     },
     new Date(),
   );
-  const reassignBlocked = polls === "closed" || !!voting?.tally_run_at;
+  const pollsLocked = polls === "closed" || !!voting?.tally_run_at;
 
   // For reassignment, valid targets are approved voters who EITHER have
   // no current topic OR have a current topic that hasn't been presented
@@ -160,7 +160,7 @@ export default async function AdminTopics({ searchParams }: PageProps) {
                       state={t.state}
                       hadArt={!!t.art_uploaded_at}
                       currentPresenterId={t.presenter_voter_id ?? null}
-                      reassignBlocked={reassignBlocked}
+                      pollsLocked={pollsLocked}
                       reassignableVoters={reassignableVoters}
                     />
                   </td>

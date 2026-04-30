@@ -16,11 +16,14 @@ interface Props {
   currentTopicPresented: boolean;
   /**
    * True when polls are locked, deadline has passed, or a tally is
-   * cached. Reassigning past this point would silently substitute a
-   * presenter for committed ballots. Migration 0021's POLLS_LOCKED gate
-   * is the function-level backstop.
+   * cached. Gates BOTH reassign and per-voter unlock-ballot:
+   *   • Reassign past this point would silently substitute a
+   *     presenter for committed ballots (migration 0021).
+   *   • Per-voter unlock past this point would let one voter edit
+   *     while everyone else is frozen, and after a tally would
+   *     diverge from the IRV input (migration 0022).
    */
-  reassignBlocked: boolean;
+  pollsLocked: boolean;
   reassignableTopics: UnassignedTopic[];
 }
 
@@ -31,7 +34,7 @@ export function VoterRowActions({
   hasArt,
   currentTopicId,
   currentTopicPresented,
-  reassignBlocked,
+  pollsLocked,
   reassignableTopics,
 }: Props) {
   const [reassignOpen, setReassignOpen] = useState(false);
@@ -50,7 +53,7 @@ export function VoterRowActions({
   // stays locked even after a reopen.
   const reassignReason: string | null = currentTopicPresented
     ? "Already presented."
-    : reassignBlocked
+    : pollsLocked
       ? "Polls locked. Reopen to reassign."
       : null;
 
@@ -67,7 +70,7 @@ export function VoterRowActions({
       >
         Reassign
       </Button>
-      {ballot_status === "submitted" ? (
+      {ballot_status === "submitted" && !pollsLocked ? (
         <Button
           kind="ghost"
           size="sm"
