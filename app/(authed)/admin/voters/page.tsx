@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Chips } from "@/components/ui/chips";
 import {
   getAllVoters,
-  getUnassignedTopics,
+  getReassignableTopics,
   type BallotStatus,
 } from "@/lib/data/admin";
 import type { Database } from "@/lib/supabase/database.types";
@@ -56,9 +56,9 @@ export default async function AdminVoters({ searchParams }: PageProps) {
       ? undefined
       : (filter as ProfileStatus | "admins");
 
-  const [voters, unassignedTopics] = await Promise.all([
+  const [voters, reassignableTopics] = await Promise.all([
     getAllVoters({ statusFilter }),
-    getUnassignedTopics(),
+    getReassignableTopics(),
   ]);
 
   return (
@@ -164,7 +164,9 @@ export default async function AdminVoters({ searchParams }: PageProps) {
                           voterName={v.full_name}
                           ballot_status={v.ballot_status}
                           hasArt={false /* admin voter list doesn't carry art state — handled in /admin/topics */}
-                          unassignedTopics={unassignedTopics}
+                          currentTopicId={v.assigned_topic?.id ?? null}
+                          currentTopicPresented={!!v.assigned_topic?.presented_at}
+                          reassignableTopics={reassignableTopics}
                         />
                       ) : null}
                     </td>

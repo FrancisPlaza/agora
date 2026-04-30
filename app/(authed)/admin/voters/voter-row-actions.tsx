@@ -12,7 +12,9 @@ interface Props {
   voterName: string;
   ballot_status: BallotStatus;
   hasArt: boolean;
-  unassignedTopics: UnassignedTopic[];
+  currentTopicId: number | null;
+  currentTopicPresented: boolean;
+  reassignableTopics: UnassignedTopic[];
 }
 
 export function VoterRowActions({
@@ -20,18 +22,31 @@ export function VoterRowActions({
   voterName,
   ballot_status,
   hasArt,
-  unassignedTopics,
+  currentTopicId,
+  currentTopicPresented,
+  reassignableTopics,
 }: Props) {
   const [reassignOpen, setReassignOpen] = useState(false);
   const [unlockOpen, setUnlockOpen] = useState(false);
   const [reassignTopicId, setReassignTopicId] = useState("");
 
+  // Filter the voter's own current topic out of the dropdown so the
+  // no-op case is unreachable from the UI. The migration 0020 short-
+  // circuit is the safety net.
+  const dropdownTopics = reassignableTopics.filter(
+    (t) => t.id !== currentTopicId,
+  );
+
   return (
-    <div className="flex justify-end gap-2 flex-wrap">
+    <div className="flex justify-end gap-2 flex-wrap items-center">
+      {currentTopicPresented ? (
+        <span className="text-xs text-text-2 italic">Already presented.</span>
+      ) : null}
       <Button
         kind="ghost"
         size="sm"
         onClick={() => setReassignOpen(true)}
+        disabled={currentTopicPresented}
       >
         Reassign
       </Button>
@@ -61,7 +76,7 @@ export function VoterRowActions({
               onChange={(e) => setReassignTopicId(e.target.value)}
             >
               <option value="">Select a topic…</option>
-              {unassignedTopics.map((t) => (
+              {dropdownTopics.map((t) => (
                 <option key={t.id} value={t.id}>
                   Nº {String(t.order_num).padStart(2, "0")} · {t.philosopher}
                 </option>

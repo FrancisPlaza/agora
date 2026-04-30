@@ -52,16 +52,24 @@ export default async function AdminTopics({ searchParams }: PageProps) {
     getAllVoters({ statusFilter: "approved" }),
   ]);
 
-  // For reassignment we want approved voters who don't have a topic yet
-  // (the unique constraint on topics.presenter_voter_id means a voter
-  // can only hold one topic). Non-voting admins (no topic by definition)
-  // are excluded — they're not presenters.
-  const unassignedVoters = voters
-    .filter((v) => !v.assigned_topic && !v.is_admin)
+  // For reassignment, valid targets are approved voters who EITHER have
+  // no current topic OR have a current topic that hasn't been presented
+  // yet. Migration 0020's assign_topic clears the source row atomically,
+  // so swapping a voter from one unpresented topic to another is a
+  // legitimate flow. Voters whose current topic is already presented are
+  // locked. Non-voting admins are excluded — they're not presenters.
+  const reassignableVoters = voters
+    .filter(
+      (v) =>
+        !v.is_admin &&
+        (!v.assigned_topic || v.assigned_topic.presented_at === null),
+    )
     .map((v) => ({
       id: v.id,
       full_name: v.full_name,
-      has_topic: false,
+      current_topic: v.assigned_topic
+        ? { philosopher: v.assigned_topic.philosopher }
+        : null,
     }));
 
   const visible = filter === "all" ? topics : topics.filter((t) => t.state === filter);
@@ -135,7 +143,8 @@ export default async function AdminTopics({ searchParams }: PageProps) {
                       topicLabel={`Nº ${String(t.order_num).padStart(2, "0")} · ${t.philosopher}`}
                       state={t.state}
                       hadArt={!!t.art_uploaded_at}
-                      unassignedVoters={unassignedVoters}
+                      currentPresenterId={t.presenter_voter_id ?? null}
+                      reassignableVoters={reassignableVoters}
                     />
                   </td>
                 </tr>

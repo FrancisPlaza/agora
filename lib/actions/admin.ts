@@ -13,6 +13,10 @@ const ERROR_MESSAGES: Record<string, string> = {
   TOPIC_TAKEN: "Another voter is already assigned to that topic",
   INVALID_STATE: "That topic isn't in the right state for this action",
   NO_BALLOT: "That voter hasn't started a ballot yet",
+  STUDENT_ALREADY_PRESENTED:
+    "This student has already presented and can't be reassigned. Their topic is locked.",
+  TOPIC_ALREADY_PRESENTED:
+    "This topic has already been presented and can't be reassigned to a new presenter.",
 };
 
 function rpcError(error: { message: string }): { error: string } {
@@ -81,11 +85,18 @@ export async function rejectVoter(
 
 // ── assignTopic ──────────────────────────────────────────────────────
 // Storage cleanup is the action's job, not the Postgres function's.
-// The function clears the row in one transaction; this orchestrates the
-// best-effort storage cleanup that runs after. If the storage delete
-// fails the row is still in correct state and the orphan files don't
-// break anything (next reassignment's list+remove cleans them, and the
-// next presenter's upload deletes them via Phase 5's pre-upload sweep).
+// The function clears row state in one transaction; this orchestrates
+// the best-effort storage cleanup for both prefixes that may have art:
+//
+//   • Destination — the topic the student is being assigned TO. Cleaned
+//     since 0014 / Phase 6.
+//   • Source — the student's previously-assigned topic, if any. Added
+//     in 0020 / this fix; the new function clears the row's art fields
+//     atomically, but storage objects need their own sweep.
+//
+// Both sweeps are best-effort. If either fails the DB state is still
+// correct; orphans self-heal on the next reassignment's pre-write
+// list+remove or the next presenter's pre-upload list+remove (Phase 5).
 export async function assignTopic(
   formData: FormData,
 ): Promise<{ error?: string }> {
@@ -98,13 +109,25 @@ export async function assignTopic(
 
   const supabase = await createClient();
 
-  // Capture prior storage state before the row is cleared.
-  const { data: priorTopic } = await supabase
-    .from("topics")
-    .select("art_image_path, art_uploaded_at")
-    .eq("id", topicId)
-    .maybeSingle();
-  const hadArt = !!priorTopic?.art_uploaded_at;
+  // Capture prior storage state for BOTH prefixes before the row is
+  // cleared. Run in parallel — both are single-row reads scoped to
+  // small primary-key indexes.
+  const [{ data: destPrior }, { data: srcPrior }] = await Promise.all([
+    supabase
+      .from("topics")
+      .select("art_uploaded_at")
+      .eq("id", topicId)
+      .maybeSingle(),
+    supabase
+      .from("topics")
+      .select("id, art_uploaded_at")
+      .eq("presenter_voter_id", targetId)
+      .neq("id", topicId)
+      .maybeSingle(),
+  ]);
+  const destHadArt = !!destPrior?.art_uploaded_at;
+  const srcHadArt = !!srcPrior?.art_uploaded_at;
+  const srcTopicId = srcPrior?.id ?? null;
 
   const { error } = await supabase.rpc("assign_topic", {
     p_target: targetId,
@@ -112,19 +135,23 @@ export async function assignTopic(
   } as never);
   if (error) return rpcError(error);
 
-  // Best-effort storage cleanup (admin role via the service client).
-  if (hadArt) {
+  // Best-effort storage cleanup against both prefixes that had art.
+  // Intentionally not surfacing storage errors — the DB state is
+  // correct and orphan files are self-healing.
+  if (destHadArt || (srcHadArt && srcTopicId != null)) {
     const service = createServiceClient();
-    const { data: existing } = await service.storage
-      .from("presentations")
-      .list(`${topicId}/`);
-    if (existing && existing.length > 0) {
-      const paths = existing.map((o) => `${topicId}/${o.name}`);
-      // Intentionally not surfacing a storage-cleanup error to the
-      // admin UI — the DB state is correct and orphan files are
-      // self-healing on the next presenter upload.
-      await service.storage.from("presentations").remove(paths);
+    async function clearPrefix(id: number) {
+      const { data: existing } = await service.storage
+        .from("presentations")
+        .list(`${id}/`);
+      if (existing && existing.length > 0) {
+        await service.storage
+          .from("presentations")
+          .remove(existing.map((o) => `${id}/${o.name}`));
+      }
     }
+    if (destHadArt) await clearPrefix(topicId);
+    if (srcHadArt && srcTopicId != null) await clearPrefix(srcTopicId);
   }
 
   revalidateAdmin();

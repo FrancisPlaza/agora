@@ -10,7 +10,12 @@ import type { TopicState } from "@/lib/data/topics";
 interface VoterOption {
   id: string;
   full_name: string;
-  has_topic: boolean;
+  /**
+   * If the voter is currently presenting another (unpresented) topic,
+   * carry the philosopher name so the dropdown can hint that picking
+   * them will swap their assignment.
+   */
+  current_topic: { philosopher: string } | null;
 }
 
 interface Props {
@@ -18,7 +23,8 @@ interface Props {
   topicLabel: string;
   state: TopicState;
   hadArt: boolean;
-  unassignedVoters: VoterOption[];
+  currentPresenterId: string | null;
+  reassignableVoters: VoterOption[];
 }
 
 export function TopicRowActions({
@@ -26,12 +32,23 @@ export function TopicRowActions({
   topicLabel,
   state,
   hadArt,
-  unassignedVoters,
+  currentPresenterId,
+  reassignableVoters,
 }: Props) {
   const [reassignOpen, setReassignOpen] = useState(false);
   const [voterId, setVoterId] = useState("");
   const [presentingError, setPresentingError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  // Topic is locked from reassignment once it's been presented. UI gates
+  // here; migration 0020's TOPIC_ALREADY_PRESENTED is the backstop.
+  const reassignLocked = state === "presented" || state === "published";
+
+  // Filter the topic's own current presenter out of the dropdown — the
+  // no-op short-circuit catches it server-side, but UX-cleaner to hide.
+  const dropdownVoters = reassignableVoters.filter(
+    (v) => v.id !== currentPresenterId,
+  );
 
   function firePresented() {
     setPresentingError(null);
@@ -58,10 +75,16 @@ export function TopicRowActions({
           Mark presented
         </Button>
       ) : null}
+      {reassignLocked ? (
+        <span className="text-xs text-text-2 italic">
+          Locked — already presented.
+        </span>
+      ) : null}
       <Button
         kind="ghost"
         size="sm"
         onClick={() => setReassignOpen(true)}
+        disabled={reassignLocked}
       >
         Reassign
       </Button>
@@ -73,8 +96,9 @@ export function TopicRowActions({
         description={
           <>
             <p className="m-0 mb-2">
-              Pick the new presenter. Only voters without an assigned topic are
-              shown.
+              Pick the new presenter. Voters without an assigned topic, plus
+              voters whose current topic hasn&rsquo;t been presented yet, are
+              shown — picking the latter swaps their assignment.
               {hadArt
                 ? " The topic's existing artwork will be wiped from storage."
                 : ""}
@@ -84,9 +108,12 @@ export function TopicRowActions({
               onChange={(e) => setVoterId(e.target.value)}
             >
               <option value="">Select a voter…</option>
-              {unassignedVoters.map((v) => (
+              {dropdownVoters.map((v) => (
                 <option key={v.id} value={v.id}>
                   {v.full_name}
+                  {v.current_topic
+                    ? ` (currently ${v.current_topic.philosopher})`
+                    : ""}
                 </option>
               ))}
             </Select>

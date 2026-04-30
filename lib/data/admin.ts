@@ -33,10 +33,13 @@ export interface VoterRow {
   student_id: string;
   status: ProfileStatus;
   is_admin: boolean;
+  // presented_at flows through so the reassign UI can disable the
+  // control when the voter's current topic is locked (post-presentation).
   assigned_topic: {
     id: number;
     philosopher: string;
     theme: string;
+    presented_at: string | null;
   } | null;
   ballot_status: BallotStatus;
 }
@@ -82,8 +85,18 @@ interface VoterRawRow {
   // version + query shape. UNIQUE FKs are conceptually one-to-one in
   // both directions; unwrapEmbed handles either case.
   topics:
-    | { id: number; philosopher: string; theme: string }
-    | Array<{ id: number; philosopher: string; theme: string }>
+    | {
+        id: number;
+        philosopher: string;
+        theme: string;
+        presented_at: string | null;
+      }
+    | Array<{
+        id: number;
+        philosopher: string;
+        theme: string;
+        presented_at: string | null;
+      }>
     | null;
   ballots:
     | { submitted_at: string | null; locked_at: string | null }
@@ -136,7 +149,7 @@ export const getAllVoters = cache(
       .from("profiles")
       .select(
         `id, full_name, email, student_id, status, is_admin,
-         topics:topics!presenter_voter_id (id, philosopher, theme),
+         topics:topics!presenter_voter_id (id, philosopher, theme, presented_at),
          ballots:ballots!voter_id (submitted_at, locked_at)`,
       )
       .order("created_at", { ascending: false });
@@ -252,6 +265,30 @@ export const getUnassignedTopics = cache(
       .from("topics")
       .select("id, order_num, philosopher, theme")
       .is("presenter_voter_id", null)
+      .order("order_num");
+    if (error || !data) return [];
+    return data;
+  },
+);
+
+/**
+ * Topics eligible as a reassignment destination: any topic that hasn't
+ * been presented yet, regardless of whether it currently has a presenter.
+ * The new assign_topic function (migration 0020) clears the source row
+ * atomically, so a topic currently assigned to someone else but not yet
+ * presented is a valid swap target.
+ *
+ * The strict `getUnassignedTopics` stays — first-time approval (in the
+ * approvals queue) shouldn't yank a topic from its existing presenter
+ * by accident.
+ */
+export const getReassignableTopics = cache(
+  async (): Promise<UnassignedTopic[]> => {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("topics")
+      .select("id, order_num, philosopher, theme")
+      .is("presented_at", null)
       .order("order_num");
     if (error || !data) return [];
     return data;
