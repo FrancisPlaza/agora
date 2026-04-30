@@ -60,38 +60,14 @@ function OrderPill({ orderNum }: { orderNum: number }) {
 }
 
 /**
- * Hero used for unassigned / assigned / presented states. Muted text
- * on a pale or white background. The order-number pill now sits as
- * card-level chrome (top-left), so this layout is just the philosopher
- * + theme stack centred at the bottom.
+ * Backdrop for any card without uploaded artwork — every state except
+ * `published` with a working signed URL. Mirrors the layered-radial
+ * idiom used by the landing hero (violet + amber over a pale linear
+ * base) so the visual brand stays cohesive across the gallery. The
+ * bottom darkening gradient + text overlay then layer on top, giving
+ * a uniform card structure regardless of art presence.
  */
-function PlainHero({ topic }: { topic: TopicView }) {
-  return (
-    <div
-      className={[
-        "h-full flex flex-col justify-end p-4",
-        topic.state === "unassigned" ? "bg-[#FAFCFE]" : "bg-white",
-      ].join(" ")}
-    >
-      <div className="font-serif text-[22px] font-semibold leading-snug tracking-tight">
-        {topic.philosopher}
-      </div>
-      <div className="font-serif italic text-[13px] text-text-2 mt-1">
-        {topic.theme}
-      </div>
-    </div>
-  );
-}
-
-/**
- * Fallback backdrop for published cards whose storage URL didn't
- * resolve. Mirrors the layered-radial idiom used by the landing
- * hero — keeps the visual brand cohesive and gives the bottom
- * overlay something interesting to sit on top of (vs. a flat solid
- * fill or a self-labelled placeholder that would conflict with the
- * overlay text).
- */
-function PublishedFallbackBackdrop() {
+function NoArtBackdrop() {
   return (
     <div
       className="absolute inset-0"
@@ -135,40 +111,39 @@ export async function TopicCard({ topic, isMine, medal }: TopicCardProps) {
       ) : null}
 
       <div className="aspect-[4/3] overflow-hidden relative">
-        {topic.state === "published" ? (
-          <>
-            {artUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={artUrl}
-                alt={topic.art_title ?? topic.theme}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            ) : (
-              <PublishedFallbackBackdrop />
-            )}
-            {/* Bottom darkening gradient — readability lever for the
-                text overlay. Sandbox-tunable: nudge to black/75 if
-                specific artwork makes the overlay hard to read. */}
-            <div
-              className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-b from-transparent to-black/65 pointer-events-none"
-              aria-hidden
-            />
-            {/* Philosopher + theme overlay. Single-line truncation
-                so long values don't wrap into the artwork; full text
-                is still on the topic detail page. */}
-            <div className="absolute inset-x-0 bottom-0 px-4 pb-3 pt-2 text-white">
-              <div className="font-serif font-semibold text-[17px] leading-tight tracking-tight truncate [text-shadow:0_1px_2px_rgba(0,0,0,0.4)]">
-                {topic.philosopher}
-              </div>
-              <div className="font-serif italic text-[12px] text-white/85 truncate mt-0.5">
-                {topic.theme}
-              </div>
-            </div>
-          </>
+        {/* Backdrop: artwork when we have it, gradient otherwise. The
+            criterion is "do we have artwork" rather than the lifecycle
+            state — every non-published card and every published card
+            with a broken signed URL gets the gradient backdrop. */}
+        {artUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={artUrl}
+            alt={topic.art_title ?? topic.theme}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
         ) : (
-          <PlainHero topic={topic} />
+          <NoArtBackdrop />
         )}
+        {/* Bottom darkening gradient — readability lever for the text
+            overlay. Sandbox-tunable: nudge to black/75 if specific
+            artwork makes the overlay hard to read. */}
+        <div
+          className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-b from-transparent to-black/65 pointer-events-none"
+          aria-hidden
+        />
+        {/* Philosopher + theme overlay. Single-line truncation so long
+            values don't wrap; full text is on the topic detail page.
+            Uniform across all states — lifecycle reads from the
+            footer status pill, not the backdrop treatment. */}
+        <div className="absolute inset-x-0 bottom-0 px-4 pb-3 pt-2 text-white">
+          <div className="font-serif font-semibold text-[17px] leading-tight tracking-tight truncate [text-shadow:0_1px_2px_rgba(0,0,0,0.4)]">
+            {topic.philosopher}
+          </div>
+          <div className="font-serif italic text-[12px] text-white/85 truncate mt-0.5">
+            {topic.theme}
+          </div>
+        </div>
       </div>
 
       <div className="px-4 py-3 border-t border-line-2 flex items-center justify-between gap-2">
