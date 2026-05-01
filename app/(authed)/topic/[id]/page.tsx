@@ -64,7 +64,7 @@ export default async function TopicDetail({ params, searchParams }: PageProps) {
           : null;
 
   return (
-    <div className="max-w-[920px] mx-auto px-4 md:px-8 py-4 md:py-6 pb-32">
+    <div className="max-w-[920px] mx-auto px-4 md:px-8 py-4 md:py-6 pb-10">
       <div className="mb-4">
         <Link
           href="/dashboard"
@@ -110,9 +110,12 @@ export default async function TopicDetail({ params, searchParams }: PageProps) {
         )}
       </div>
 
-      {/* Below hero */}
-      <div className="mt-5 flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-        <div className="min-w-0">
+      {/* Below hero — title block on the left; right-side cluster
+          carries the "Your topic" affordances (when applicable) plus
+          the always-visible Add-to-ranking form. flex-wrap lets the
+          cluster drop to its own line on narrow viewports. */}
+      <div className="mt-5 flex flex-col md:flex-row md:items-start md:justify-between gap-3 flex-wrap">
+        <div className="min-w-0 flex-1">
           <div className="font-mono text-[11px] text-text-2 uppercase tracking-[0.08em]">
             {topic.philosopher} · {topic.theme}
           </div>
@@ -132,16 +135,19 @@ export default async function TopicDetail({ params, searchParams }: PageProps) {
             )}
           </div>
         </div>
-        {isMyTopic ? (
-          <div className="shrink-0 flex items-center gap-2">
-            <Badge tone="amber">Your topic</Badge>
-            <Link href={`/topic/${topic.id}/upload`}>
-              <Button kind="secondary" size="sm" icon="upload">
-                {topic.state === "published" ? "Edit upload" : "Upload art"}
-              </Button>
-            </Link>
-          </div>
-        ) : null}
+        <div className="shrink-0 flex items-center gap-2 flex-wrap ml-auto md:ml-0">
+          {isMyTopic ? (
+            <>
+              <Badge tone="amber">Your topic</Badge>
+              <Link href={`/topic/${topic.id}/upload`}>
+                <Button kind="secondary" size="sm" icon="upload">
+                  {topic.state === "published" ? "Edit upload" : "Upload art"}
+                </Button>
+              </Link>
+            </>
+          ) : null}
+          <AddToRankingForm topicId={topic.id} />
+        </div>
       </div>
 
       {topic.art_explanation ? (
@@ -171,10 +177,6 @@ export default async function TopicDetail({ params, searchParams }: PageProps) {
         )}
       </div>
 
-      {/* Sticky CTA — calls addToMyRanking and redirects to /vote?focus=N. */}
-      <div className="fixed bottom-0 inset-x-0 bg-white border-t border-line px-4 md:px-8 py-3 flex items-center justify-end gap-3 z-30 md:left-auto md:right-6 md:bottom-6 md:inset-x-auto md:rounded-lg md:border md:shadow-[0_4px_14px_rgba(10,37,64,0.08),0_1px_3px_rgba(10,37,64,0.05)]">
-        <AddToRankingForm topicId={topic.id} />
-      </div>
     </div>
   );
 }
