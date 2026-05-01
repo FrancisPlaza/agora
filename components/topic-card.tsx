@@ -61,17 +61,21 @@ function OrderPill({ orderNum }: { orderNum: number }) {
 
 /**
  * Backdrop for any card without uploaded artwork — every state except
- * `published` with a working signed URL. Saturated brand-violet linear
- * gradient (calibrated a tier lighter than the design reference) so
- * cards read as confident brand chrome rather than a near-white wash.
- * The bottom darkening gradient + white text overlay layer on top.
+ * `published` with a working signed URL. Soft brand-violet linear
+ * gradient: saturated enough to read as designed brand chrome, muted
+ * enough to recede when sitting next to real student artwork. The
+ * bottom darkening gradient + white text overlay layer on top.
+ *
+ * Tunable: bump toward #ABA8C9 / #C2B5CE if real artwork still finds
+ * this too strong; lift toward #8B86F0 / #B79DE3 if it reads too
+ * faded against the white card border.
  */
 function NoArtBackdrop() {
   return (
     <div
       className="absolute inset-0"
       style={{
-        background: "linear-gradient(135deg, #7E7DF0 0%, #B79DE3 100%)",
+        background: "linear-gradient(135deg, #A6A2EA 0%, #C7B6E0 100%)",
       }}
       aria-hidden
     />
