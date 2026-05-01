@@ -86,8 +86,8 @@ async function main() {
     try {
       await seedAdmin(sb, admin);
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error(`[fail] ${admin.email}: ${message}`);
+      console.error(`\n[fail] ${admin.email}:`);
+      console.error(indent(explainError(err), "  "));
       process.exit(1);
     }
   }
@@ -103,11 +103,13 @@ async function seedAdmin(
   admin: (typeof ADMINS)[number],
 ) {
   const { email, full_name, student_id } = admin;
+  console.log(`\n${email}`);
 
   // 1. Detect existing auth user. listUsers paginates; for a freshly-
   //    deployed prod with effectively zero users, page 1 is sufficient.
   //    If the prod project ever exceeds 200 users, switch to pagination
   //    or the email-filter form once it lands in @supabase/supabase-js.
+  console.log("  → listing existing auth users");
   const { data: list, error: listErr } = await sb.auth.admin.listUsers({
     perPage: 200,
   });
@@ -116,9 +118,10 @@ async function seedAdmin(
   let userId: string;
   const existing = list.users.find((u) => u.email === email);
   if (existing) {
-    console.log(`[skip create] ${email} already exists, will upsert profile`);
+    console.log("  → user already exists, will upsert profile");
     userId = existing.id;
   } else {
+    console.log("  → creating auth user (email_confirm: true)");
     const { data: created, error: createErr } = await sb.auth.admin.createUser({
       email,
       email_confirm: true,
@@ -127,12 +130,14 @@ async function seedAdmin(
     if (createErr) throw createErr;
     if (!created.user) throw new Error("createUser returned no user");
     userId = created.user.id;
+    console.log(`  → auth user created (id: ${userId.slice(0, 8)}…)`);
   }
 
   // 2. Upsert profile. handle_new_user trigger inserted a pending_email
   //    row when the auth user was created; this UPDATE forces the final
   //    state and is the authoritative write. For orphaned auth users
   //    (created without the trigger firing), fall through to INSERT.
+  console.log("  → fetching existing profile row");
   const { data: existingProfile, error: fetchErr } = await sb
     .from("profiles")
     .select("approved_at")
@@ -143,6 +148,9 @@ async function seedAdmin(
   const approvedAt = existingProfile?.approved_at ?? new Date().toISOString();
 
   if (existingProfile) {
+    console.log(
+      `  → updating profile (approved_at: ${existingProfile.approved_at ? "preserved" : "now()"})`,
+    );
     const { error: updateErr } = await sb
       .from("profiles")
       .update({
@@ -155,6 +163,7 @@ async function seedAdmin(
       .eq("id", userId);
     if (updateErr) throw updateErr;
   } else {
+    console.log("  → no profile row found, inserting (orphaned auth user)");
     const { error: insertErr } = await sb.from("profiles").insert({
       id: userId,
       email,
@@ -169,6 +178,7 @@ async function seedAdmin(
 
   // 3. Verify by re-fetching. Structural failure (bad FK, missing
   //    trigger, typo) bubbles up as exit 1.
+  console.log("  → verifying");
   const { data: verified, error: verifyErr } = await sb
     .from("profiles")
     .select("id, status, is_admin")
@@ -182,11 +192,59 @@ async function seedAdmin(
   }
 
   const idShort = verified.id.slice(0, 8);
-  console.log(`[ok] ${email} → approved beadle (profile id: ${idShort}…)`);
+  console.log(`  [ok] ${email} → approved beadle (profile id: ${idShort}…)`);
+}
+
+/**
+ * Format an arbitrary thrown value for console output.
+ *
+ * Supabase's PostgrestError and AuthError are plain objects shaped
+ * `{ code, message, details, hint, status, name }` — they're not Error
+ * subclasses, so `err instanceof Error` is false and `String(err)`
+ * returns "[object Object]". This walks the useful fields and falls
+ * back to JSON.stringify for unknown shapes.
+ */
+function explainError(err: unknown): string {
+  if (err === null || err === undefined) return String(err);
+
+  const lines: string[] = [];
+  const e = err as Record<string, unknown>;
+
+  const message = typeof e.message === "string" ? e.message : null;
+  const code = typeof e.code === "string" ? e.code : null;
+  const status = typeof e.status === "number" ? String(e.status) : null;
+  const details = typeof e.details === "string" ? e.details : null;
+  const hint = typeof e.hint === "string" ? e.hint : null;
+  const name = typeof e.name === "string" ? e.name : null;
+
+  if (message) lines.push(message);
+  if (code) lines.push(`code: ${code}`);
+  if (status) lines.push(`status: ${status}`);
+  if (details) lines.push(`details: ${details}`);
+  if (hint) lines.push(`hint: ${hint}`);
+  if (name && name !== "Error" && !lines.length) lines.push(`name: ${name}`);
+
+  if (lines.length > 0) return lines.join("\n");
+
+  if (err instanceof Error) {
+    return err.stack ?? err.toString();
+  }
+
+  try {
+    return JSON.stringify(err, null, 2);
+  } catch {
+    return String(err);
+  }
+}
+
+function indent(text: string, prefix: string): string {
+  return text
+    .split("\n")
+    .map((line) => prefix + line)
+    .join("\n");
 }
 
 main().catch((err) => {
-  const message = err instanceof Error ? err.message : String(err);
-  console.error(message);
+  console.error(explainError(err));
   process.exit(1);
 });
