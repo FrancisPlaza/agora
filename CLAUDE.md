@@ -134,7 +134,7 @@ This is a trust property of the system. Two beadles who are also voters need to 
 ## File handling
 
 - Artwork goes to Supabase Storage bucket `presentations`, path `{topic_id}/{filename}`.
-- Accepted: JPG, PNG, WEBP, HEIC, PDF. Max 10 MB.
+- Accepted: JPG, PNG, GIF, WEBP, PDF. Max 10 MB.
 - For PDFs, extract the first page at upload time and store as `{topic_id}/{filename}.preview.png` for fast thumbnail rendering.
 - Bucket policies: `INSERT` allowed only to the matching presenter (RLS via path), `SELECT` for all approved voters, `UPDATE` not allowed (replace = delete + re-insert).
 

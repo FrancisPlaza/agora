@@ -21,7 +21,6 @@ import { uploadPresentation } from "@/lib/actions/presentation";
 import {
   countSentences,
   isAcceptedArtFile,
-  isHeic,
   isPdf,
 } from "@/lib/validation";
 
@@ -73,7 +72,6 @@ export function UploadForm({
   );
   const [fileError, setFileError] = useState<string | null>(null);
   const [renderingPdf, setRenderingPdf] = useState(false);
-  const [isHeicPlaceholder, setIsHeicPlaceholder] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -144,7 +142,6 @@ export function UploadForm({
     const meta = { type: picked.type, name: picked.name, size: picked.size };
 
     if (isPdf(meta)) {
-      setIsHeicPlaceholder(false);
       setRenderingPdf(true);
       try {
         const blob = await renderPdfFirstPage(picked);
@@ -160,11 +157,8 @@ export function UploadForm({
       } finally {
         setRenderingPdf(false);
       }
-    } else if (isHeic(meta)) {
-      setIsHeicPlaceholder(true);
-      setPreviewUrl(null);
     } else {
-      setIsHeicPlaceholder(false);
+      // Browsers render JPG / PNG / GIF / WEBP natively via <img>.
       setPreviewUrl(URL.createObjectURL(picked));
     }
   }
@@ -184,7 +178,6 @@ export function UploadForm({
   function clearFile() {
     setFile(null);
     setPdfPreviewBlob(null);
-    setIsHeicPlaceholder(false);
     if (previewUrl && previewUrl.startsWith("blob:")) {
       URL.revokeObjectURL(previewUrl);
     }
@@ -220,7 +213,7 @@ export function UploadForm({
             Artwork
           </div>
           <div className="text-xs text-text-2 mb-3">
-            JPG, PNG, WEBP, HEIC or PDF · 10 MB max. PDFs use the first page
+            JPG, PNG, GIF, WEBP, or PDF · 10 MB max. PDFs use the first page
             as preview.
           </div>
           {file ? (
@@ -247,7 +240,7 @@ export function UploadForm({
             ref={fileInputRef}
             type="file"
             className="hidden"
-            accept="image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf,.heic,.heif,.pdf"
+            accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,.pdf"
             onChange={onPick}
           />
           {fileError ? (
@@ -314,7 +307,6 @@ export function UploadForm({
           previewUrl={previewUrl}
           noteCount={noteCount}
           presenterName={presenterName}
-          heicFileName={isHeicPlaceholder ? file?.name ?? null : null}
         />
         <div className="text-xs text-text-2 mt-3">
           This is how your card will appear on every voter&rsquo;s dashboard.

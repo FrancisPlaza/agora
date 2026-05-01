@@ -27,9 +27,8 @@ const ACCEPTED_MIME = new Set([
   "image/jpeg",
   "image/jpg",
   "image/png",
+  "image/gif",
   "image/webp",
-  "image/heic",
-  "image/heif",
   "application/pdf",
 ]);
 
@@ -37,9 +36,8 @@ const ACCEPTED_EXT = new Set([
   "jpg",
   "jpeg",
   "png",
+  "gif",
   "webp",
-  "heic",
-  "heif",
   "pdf",
 ]);
 
@@ -50,11 +48,11 @@ function fileExtension(name: string): string {
 }
 
 /**
- * Accept JPG / PNG / WEBP / HEIC / PDF, ≤ 10 MB.
+ * Accept JPG / PNG / GIF / WEBP / PDF, ≤ 10 MB.
  *
- * Both MIME and extension are checked because iOS Safari reports HEIC
- * uploads inconsistently — `image/heic`, `image/heif`, sometimes empty.
- * Either matching path is sufficient.
+ * Both MIME and extension are checked — browsers report inconsistently
+ * for some formats (especially when files arrive with no MIME header
+ * via drag-drop or paste). Either matching path is sufficient.
  */
 export function isAcceptedArtFile(file: AcceptedArtInput): AcceptedArtCheck {
   if (file.size <= 0) {
@@ -71,7 +69,7 @@ export function isAcceptedArtFile(file: AcceptedArtInput): AcceptedArtCheck {
   if (!mimeOk && !extOk) {
     return {
       ok: false,
-      reason: "File type not accepted. Use JPG, PNG, WEBP, HEIC, or PDF.",
+      reason: "File type not accepted. Use JPG, PNG, GIF, WEBP, or PDF.",
     };
   }
 
@@ -86,21 +84,6 @@ export function isPdf(file: AcceptedArtInput): boolean {
   );
 }
 
-/**
- * True if the file is HEIC/HEIF (by either MIME or extension). Used to
- * branch the in-form preview path: non-Safari browsers can't render HEIC
- * via <img>, so we show a styled placeholder instead of a broken image.
- *
- * iOS Safari sometimes uploads HEIC with an empty MIME type, hence the
- * extension fallback.
- */
-export function isHeic(file: AcceptedArtInput): boolean {
-  const mime = file.type.toLowerCase();
-  if (mime === "image/heic" || mime === "image/heif") return true;
-  const ext = fileExtension(file.name);
-  return ext === "heic" || ext === "heif";
-}
-
 /** Lowercase extension chosen for the storage path. Defaults to mime guess. */
 export function fileExtensionForStorage(file: AcceptedArtInput): string {
   const ext = fileExtension(file.name);
@@ -108,7 +91,7 @@ export function fileExtensionForStorage(file: AcceptedArtInput): string {
   if (file.type === "application/pdf") return "pdf";
   if (file.type === "image/jpeg") return "jpg";
   if (file.type === "image/png") return "png";
+  if (file.type === "image/gif") return "gif";
   if (file.type === "image/webp") return "webp";
-  if (file.type === "image/heic" || file.type === "image/heif") return "heic";
   return "bin";
 }

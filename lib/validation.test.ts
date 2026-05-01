@@ -3,7 +3,6 @@ import {
   countSentences,
   fileExtensionForStorage,
   isAcceptedArtFile,
-  isHeic,
   isPdf,
 } from "./validation";
 
@@ -45,12 +44,6 @@ describe("isAcceptedArtFile", () => {
     ).toEqual({ ok: true });
   });
 
-  it("accepts HEIC by extension even when MIME is empty (iOS Safari edge case)", () => {
-    expect(
-      isAcceptedArtFile({ type: "", name: "iphone-shot.heic", size: 1000 }),
-    ).toEqual({ ok: true });
-  });
-
   it("rejects a 12 MB PDF as too large", () => {
     const result = isAcceptedArtFile({
       type: "application/pdf",
@@ -66,14 +59,30 @@ describe("isAcceptedArtFile", () => {
     expect(result.ok).toBe(false);
   });
 
-  it("rejects a .gif", () => {
+  it("accepts a GIF by MIME", () => {
+    expect(
+      isAcceptedArtFile({ type: "image/gif", name: "anim.gif", size: 1000 }),
+    ).toEqual({ ok: true });
+  });
+
+  it("accepts a GIF by extension when MIME is empty", () => {
+    expect(
+      isAcceptedArtFile({ type: "", name: "anim.gif", size: 1000 }),
+    ).toEqual({ ok: true });
+  });
+
+  it("rejects HEIC with the new accepted-types message", () => {
     const result = isAcceptedArtFile({
-      type: "image/gif",
-      name: "anim.gif",
+      type: "image/heic",
+      name: "iphone-shot.heic",
       size: 1000,
     });
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.reason).toMatch(/JPG|PNG|WEBP|HEIC|PDF/);
+    if (!result.ok) {
+      expect(result.reason).toBe(
+        "File type not accepted. Use JPG, PNG, GIF, WEBP, or PDF.",
+      );
+    }
   });
 
   it("rejects a .docx pretending to be an image", () => {
@@ -84,30 +93,14 @@ describe("isAcceptedArtFile", () => {
     });
     expect(result.ok).toBe(false);
   });
-});
 
-describe("isHeic", () => {
-  it("detects HEIC by MIME", () => {
-    expect(isHeic({ type: "image/heic", name: "x.heic", size: 1 })).toBe(true);
-    expect(isHeic({ type: "image/heif", name: "x.heif", size: 1 })).toBe(true);
-    expect(isHeic({ type: "IMAGE/HEIC", name: "x.heic", size: 1 })).toBe(true);
-  });
-
-  it("detects HEIC by extension when MIME is empty (iOS Safari edge case)", () => {
-    expect(isHeic({ type: "", name: "iphone.heic", size: 1 })).toBe(true);
-    expect(isHeic({ type: "", name: "iphone.HEIF", size: 1 })).toBe(true);
-  });
-
-  it("returns false for PNG, JPG, PDF, GIF", () => {
-    expect(isHeic({ type: "image/png", name: "x.png", size: 1 })).toBe(false);
-    expect(isHeic({ type: "image/jpeg", name: "x.jpg", size: 1 })).toBe(false);
-    expect(isHeic({ type: "application/pdf", name: "x.pdf", size: 1 })).toBe(false);
-    expect(isHeic({ type: "image/gif", name: "x.gif", size: 1 })).toBe(false);
-  });
-
-  it("returns false for files with no extension and a non-HEIC MIME", () => {
-    expect(isHeic({ type: "image/png", name: "no-ext", size: 1 })).toBe(false);
-    expect(isHeic({ type: "", name: "no-ext", size: 1 })).toBe(false);
+  it("rejects a file with no extension and a non-art MIME", () => {
+    const result = isAcceptedArtFile({
+      type: "application/octet-stream",
+      name: "mystery",
+      size: 1000,
+    });
+    expect(result.ok).toBe(false);
   });
 });
 
