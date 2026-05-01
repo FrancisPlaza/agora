@@ -4,8 +4,8 @@
  * Run with:  npx tsx scripts/seed-sandbox.ts
  *
  * Required env (sourced before invocation):
- *   SUPABASE_URL              — sandbox Supabase project URL
- *   SUPABASE_SERVICE_ROLE_KEY — sandbox service-role key
+ *   SUPABASE_URL        — sandbox Supabase project URL
+ *   SUPABASE_SECRET_KEY — sandbox secret key (formerly the service-role key)
  *
  * SAFETY GUARD: aborts unless SUPABASE_URL contains `127.0.0.1` (local)
  * OR the explicit `AGORA_SEED_OK=true` env var is set. A misfired seed
@@ -54,10 +54,10 @@ function abortIfNotSandbox(url: string) {
 
 async function main() {
   const url = process.env.SUPABASE_URL ?? "";
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+  const key = process.env.SUPABASE_SECRET_KEY ?? "";
   if (!url || !key) {
     console.error(
-      "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in env.",
+      "SUPABASE_URL and SUPABASE_SECRET_KEY must be set in env.",
     );
     process.exit(1);
   }
