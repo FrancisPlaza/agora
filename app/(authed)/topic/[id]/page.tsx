@@ -110,11 +110,11 @@ export default async function TopicDetail({ params, searchParams }: PageProps) {
         )}
       </div>
 
-      {/* Below hero — title block on the left; right-side cluster
-          carries the "Your topic" affordances (when applicable) plus
-          the always-visible Add-to-ranking form. flex-wrap lets the
-          cluster drop to its own line on narrow viewports. */}
-      <div className="mt-5 flex flex-col md:flex-row md:items-start md:justify-between gap-3 flex-wrap">
+      {/* Below hero — title block on the left, AddToRanking on the
+          right. The "Your topic" badge sits inline at the end of the
+          byline; the Edit-upload affordance gets its own row beneath
+          the byline so it reads as an action rather than identity. */}
+      <div className="mt-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3 flex-wrap">
         <div className="min-w-0 flex-1">
           <div className="font-mono text-[11px] text-text-2 uppercase tracking-[0.08em]">
             {topic.philosopher} · {topic.theme}
@@ -129,23 +129,28 @@ export default async function TopicDetail({ params, searchParams }: PageProps) {
                 {topic.presented_at
                   ? ` · presented ${fmtDate(topic.presented_at)}`
                   : null}
+                {isMyTopic ? (
+                  <>
+                    {" · "}
+                    <Badge tone="amber">Your topic</Badge>
+                  </>
+                ) : null}
               </>
             ) : (
               "Presenter TBA"
             )}
           </div>
-        </div>
-        <div className="shrink-0 flex items-center gap-2 flex-wrap ml-auto md:ml-0">
           {isMyTopic ? (
-            <>
-              <Badge tone="amber">Your topic</Badge>
+            <div className="mt-3">
               <Link href={`/topic/${topic.id}/upload`}>
                 <Button kind="secondary" size="sm" icon="upload">
                   {topic.state === "published" ? "Edit upload" : "Upload art"}
                 </Button>
               </Link>
-            </>
+            </div>
           ) : null}
+        </div>
+        <div className="shrink-0 ml-auto md:ml-0">
           <AddToRankingForm topicId={topic.id} />
         </div>
       </div>
