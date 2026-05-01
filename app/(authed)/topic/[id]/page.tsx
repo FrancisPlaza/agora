@@ -123,8 +123,11 @@ export default async function TopicDetail({ params, searchParams }: PageProps) {
       {/* Below hero — title block on the left, AddToRanking on the
           right. The "Your topic" badge sits inline at the end of the
           byline; the Edit-upload affordance gets its own row beneath
-          the byline so it reads as an action rather than identity. */}
-      <div className="mt-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3 flex-wrap">
+          the byline so it reads as an action rather than identity.
+          md:items-start keeps the rank button aligned with the top of
+          the title block (same baseline as the eyebrow line),
+          regardless of whether Edit upload renders below the byline. */}
+      <div className="mt-5 flex flex-col md:flex-row md:items-start md:justify-between gap-3 flex-wrap">
         <div className="min-w-0 flex-1">
           <div className="font-mono text-[11px] text-text-2 uppercase tracking-[0.08em]">
             {topic.philosopher} · {topic.theme}
