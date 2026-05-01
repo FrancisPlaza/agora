@@ -59,29 +59,6 @@ function OrderPill({ orderNum }: { orderNum: number }) {
   );
 }
 
-/**
- * Backdrop for any card without uploaded artwork — every state except
- * `published` with a working signed URL. Soft brand-violet linear
- * gradient: saturated enough to read as designed brand chrome, muted
- * enough to recede when sitting next to real student artwork. The
- * bottom darkening gradient + white text overlay layer on top.
- *
- * Tunable: bump toward #ABA8C9 / #C2B5CE if real artwork still finds
- * this too strong; lift toward #8B86F0 / #B79DE3 if it reads too
- * faded against the white card border.
- */
-function NoArtBackdrop() {
-  return (
-    <div
-      className="absolute inset-0"
-      style={{
-        background: "linear-gradient(135deg, #A6A2EA 0%, #C7B6E0 100%)",
-      }}
-      aria-hidden
-    />
-  );
-}
-
 export async function TopicCard({ topic, isMine, medal }: TopicCardProps) {
   const artUrl =
     topic.state === "published" && topic.art_image_path
@@ -110,39 +87,45 @@ export async function TopicCard({ topic, isMine, medal }: TopicCardProps) {
       ) : null}
 
       <div className="aspect-[4/3] overflow-hidden relative">
-        {/* Backdrop: artwork when we have it, gradient otherwise. The
-            criterion is "do we have artwork" rather than the lifecycle
-            state — every non-published card and every published card
-            with a broken signed URL gets the gradient backdrop. */}
         {artUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={artUrl}
-            alt={topic.art_title ?? topic.theme}
-            className="absolute inset-0 w-full h-full object-cover"
-          />
+          // ── Artwork mode ──────────────────────────────────────────
+          // Image-as-backdrop, bottom darkening for white-text contrast,
+          // bottom-anchored philosopher + theme overlay.
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={artUrl}
+              alt={topic.art_title ?? topic.theme}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <div
+              className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-b from-transparent to-black/65 pointer-events-none"
+              aria-hidden
+            />
+            <div className="absolute inset-x-0 bottom-0 px-4 pb-3 pt-2 text-white">
+              <div className="font-serif font-semibold text-[17px] leading-tight tracking-tight truncate [text-shadow:0_1px_2px_rgba(0,0,0,0.4)]">
+                {topic.philosopher}
+              </div>
+              <div className="font-serif italic text-[12px] text-white/85 truncate mt-0.5">
+                {topic.theme}
+              </div>
+            </div>
+          </>
         ) : (
-          <NoArtBackdrop />
+          // ── No-artwork mode ───────────────────────────────────────
+          // Calm surface-alt panel with centered dark serif text. No
+          // bottom darkening (useless on a light backdrop). Corner Nº
+          // pill carries the topic number; status pill in the footer
+          // carries the lifecycle.
+          <div className="absolute inset-0 bg-surface-alt flex flex-col items-center justify-center text-center px-6">
+            <div className="font-serif font-semibold text-[17px] leading-tight tracking-tight text-text truncate max-w-full">
+              {topic.philosopher}
+            </div>
+            <div className="font-serif italic text-[12px] text-text-2 truncate mt-1 max-w-full">
+              {topic.theme}
+            </div>
+          </div>
         )}
-        {/* Bottom darkening gradient — readability lever for the text
-            overlay. Sandbox-tunable: nudge to black/75 if specific
-            artwork makes the overlay hard to read. */}
-        <div
-          className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-b from-transparent to-black/65 pointer-events-none"
-          aria-hidden
-        />
-        {/* Philosopher + theme overlay. Single-line truncation so long
-            values don't wrap; full text is on the topic detail page.
-            Uniform across all states — lifecycle reads from the
-            footer status pill, not the backdrop treatment. */}
-        <div className="absolute inset-x-0 bottom-0 px-4 pb-3 pt-2 text-white">
-          <div className="font-serif font-semibold text-[17px] leading-tight tracking-tight truncate [text-shadow:0_1px_2px_rgba(0,0,0,0.4)]">
-            {topic.philosopher}
-          </div>
-          <div className="font-serif italic text-[12px] text-white/85 truncate mt-0.5">
-            {topic.theme}
-          </div>
-        </div>
       </div>
 
       <div className="px-4 py-3 border-t border-line-2 flex items-center justify-between gap-2">
