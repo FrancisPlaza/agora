@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArtPlaceholder } from "@/components/art-placeholder";
+import { ArtworkLightbox } from "@/components/artwork-lightbox";
 import { NoteEditor } from "@/components/note-editor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -74,41 +75,50 @@ export default async function TopicDetail({ params, searchParams }: PageProps) {
         </Link>
       </div>
 
-      {/* Hero */}
-      <div className="rounded-lg overflow-hidden border border-line bg-white aspect-[4/3] md:aspect-[16/7]">
-        {isPublished && artUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={artUrl}
-            alt={topic.art_title ?? topic.theme}
-            className="w-full h-full object-cover"
-          />
-        ) : isPublished ? (
-          <ArtPlaceholder
-            orderNum={topic.order_num}
-            philosopher={topic.philosopher}
-            theme={topic.theme}
-            artTitle={topic.art_title}
-          />
-        ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center text-center p-6">
-            <div className="font-mono text-[11px] text-text-2 tracking-[0.1em] uppercase mb-3">
-              Number {String(topic.order_num).padStart(2, "0")}
-            </div>
-            <div className="font-serif text-3xl md:text-4xl font-semibold tracking-tight">
-              {topic.philosopher}
-            </div>
-            <div className="font-serif italic text-text-2 mt-1.5">
-              {topic.theme}
-            </div>
-            {stateBadge ? (
-              <div className="mt-4">
-                <Badge tone={stateBadge.tone}>{stateBadge.label}</Badge>
-              </div>
-            ) : null}
+      {/* Hero — clickable lightbox only when there's real artwork. The
+          gradient/placeholder branches stay plain <div>s; the lightbox
+          affordance shouldn't appear over content that isn't the
+          actual student work. */}
+      {isPublished && artUrl ? (
+        <ArtworkLightbox src={artUrl} alt={topic.art_title ?? topic.theme}>
+          <div className="rounded-lg overflow-hidden border border-line bg-white aspect-[4/3] md:aspect-[16/7]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={artUrl}
+              alt={topic.art_title ?? topic.theme}
+              className="w-full h-full object-cover"
+            />
           </div>
-        )}
-      </div>
+        </ArtworkLightbox>
+      ) : (
+        <div className="rounded-lg overflow-hidden border border-line bg-white aspect-[4/3] md:aspect-[16/7]">
+          {isPublished ? (
+            <ArtPlaceholder
+              orderNum={topic.order_num}
+              philosopher={topic.philosopher}
+              theme={topic.theme}
+              artTitle={topic.art_title}
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center text-center p-6">
+              <div className="font-mono text-[11px] text-text-2 tracking-[0.1em] uppercase mb-3">
+                Number {String(topic.order_num).padStart(2, "0")}
+              </div>
+              <div className="font-serif text-3xl md:text-4xl font-semibold tracking-tight">
+                {topic.philosopher}
+              </div>
+              <div className="font-serif italic text-text-2 mt-1.5">
+                {topic.theme}
+              </div>
+              {stateBadge ? (
+                <div className="mt-4">
+                  <Badge tone={stateBadge.tone}>{stateBadge.label}</Badge>
+                </div>
+              ) : null}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Below hero — title block on the left, AddToRanking on the
           right. The "Your topic" badge sits inline at the end of the

@@ -28,7 +28,8 @@ export type IconName =
   | "filter"
   | "info"
   | "log-out"
-  | "mail";
+  | "mail"
+  | "expand";
 
 interface IconProps extends Omit<SVGProps<SVGSVGElement>, "name" | "stroke"> {
   name: IconName;
@@ -105,6 +106,8 @@ export function Icon({ name, size = 16, strokeWidth = 1.6, ...rest }: IconProps)
       return <svg {...common}><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" /></svg>;
     case "mail":
       return <svg {...common}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 7l9 6 9-6" /></svg>;
+    case "expand":
+      return <svg {...common}><path d="M3 9V3h6M21 9V3h-6M3 15v6h6M21 15v6h-6" /></svg>;
     default:
       return null;
   }
