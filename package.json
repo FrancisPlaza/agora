@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "db:reset": "supabase db reset",
     "db:migrate": "supabase migration up --local",
-    "db:types": "supabase gen types typescript --local 2>/dev/null | grep -v '^Connecting' > lib/supabase/database.types.ts"
+    "db:types": "supabase gen types typescript --local 2>/dev/null | grep -v '^Connecting' > lib/supabase/database.types.ts",
+    "seed:prod-admins": "npx tsx scripts/seed-prod-admins.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
