@@ -51,11 +51,15 @@ export async function middleware(request: NextRequest) {
     },
   ) as unknown as SupabaseClient<Database>;
 
+  const { pathname } = request.nextUrl;
+
+  const tUser = Date.now();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  const { pathname } = request.nextUrl;
+  console.log(
+    `[perf] middleware.getUser ${pathname} ${Date.now() - tUser}ms`,
+  );
 
   // The magic-link callback always passes through; it manages its own redirect.
   if (pathname.startsWith("/auth/")) return response;
@@ -66,11 +70,15 @@ export async function middleware(request: NextRequest) {
   }
 
   // Authenticated. Look up status + admin flag to gate.
+  const tProfile = Date.now();
   const { data: profile, error: profileErr } = await supabase
     .from("profiles")
     .select("status, is_admin")
     .eq("id", user.id)
     .maybeSingle();
+  console.log(
+    `[perf] middleware.profile ${pathname} ${Date.now() - tProfile}ms`,
+  );
 
   // Surface DB-side failures (RLS, missing grants, dropped FK) instead
   // of silently treating them as a missing profile. The fallback to
