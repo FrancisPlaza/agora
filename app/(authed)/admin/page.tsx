@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Avatar } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
@@ -8,6 +9,11 @@ import {
   type AuditLogEntry,
 } from "@/lib/data/admin";
 import { formatRelative } from "@/lib/relative-time";
+
+// `absolute` bypasses both the admin layout's "%s | Admin | Agora"
+// template and the root layout's "%s | Agora" template — without it,
+// the layout's default would be wrapped to "Admin | Agora | Agora".
+export const metadata: Metadata = { title: { absolute: "Admin | Agora" } };
 
 const ACTION_VERBS: Record<string, string> = {
   approve_voter: "approved",
