@@ -40,9 +40,22 @@ export function DeadlineForm({ initialIso, disabled = false }: DeadlineFormProps
   function fire() {
     setError(null);
     setSavedAt(null);
+    // The datetime-local input returns a naive "YYYY-MM-DDTHH:mm" with
+    // no timezone. Parse it here in the browser (which interprets it
+    // as the user's local time) and ship a true UTC ISO. If we leave
+    // the conversion to the server action, the server's TZ (UTC on
+    // Vercel) treats the naive string as UTC and shifts the value by
+    // the user's offset on every round-trip.
+    const localDate = new Date(value);
+    if (Number.isNaN(localDate.getTime())) {
+      setError("Pick a valid deadline first.");
+      return;
+    }
+    const iso = localDate.toISOString();
+
     startTransition(async () => {
       const fd = new FormData();
-      fd.set("deadlineIso", value);
+      fd.set("deadlineIso", iso);
       const result = await setDeadline(fd);
       if (result.error) {
         setError(result.error);

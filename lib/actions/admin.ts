@@ -207,11 +207,12 @@ export async function unlockBallot(
 }
 
 // ── setDeadline ──────────────────────────────────────────────────────
-// `<input type="datetime-local">` returns a naive YYYY-MM-DDTHH:mm
-// string with no timezone info. `new Date(value).toISOString()`
-// interprets it in the browser's (and here, the server's) local
-// timezone — fine for a single-class app where the beadle and voters
-// share a timezone.
+// Contract: `deadlineIso` is already a fully-qualified UTC ISO string
+// (e.g. "2026-05-31T15:59:00.000Z"). The DeadlineForm client converts
+// the naive datetime-local input to ISO in the browser's timezone
+// before sending so the server doesn't re-interpret it. We don't
+// rely on the server's TZ matching the user's — Vercel runs in UTC,
+// users live in Manila.
 export async function setDeadline(
   formData: FormData,
 ): Promise<{ error?: string }> {
