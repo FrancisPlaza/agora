@@ -164,7 +164,13 @@ export default async function TopicDetail({ params, searchParams }: PageProps) {
           ) : null}
         </div>
         <div className="shrink-0 ml-auto md:ml-0">
-          <AddToRankingForm topicId={topic.id} />
+          {topic.state === "unassigned" ? (
+            <span className="text-text-2 text-[13px] italic">
+              No presenter assigned yet
+            </span>
+          ) : (
+            <AddToRankingForm topicId={topic.id} />
+          )}
         </div>
       </div>
 

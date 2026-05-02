@@ -38,12 +38,19 @@ export default async function Vote({ searchParams }: PageProps) {
   // page — quietly bounce them to the dashboard.
   if (!myTopic) redirect("/dashboard");
 
-  const [topics, votingState, ballot, params] = await Promise.all([
+  const [allTopics, votingState, ballot, params] = await Promise.all([
     getAllTopics(),
     getVotingState(),
     getMyBallot(),
     searchParams,
   ]);
+
+  // Unassigned topics aren't rankable — they still appear in the
+  // dashboard gallery, but a voter can't drag/drop them into a ballot
+  // because there's no presenter to vote for. Filter once here and
+  // derive the editor's view from the filtered list.
+  const topics = allTopics.filter((t) => t.state !== "unassigned");
+  const rankableIds = new Set(topics.map((t) => t.id));
 
   const polls = derivePollsState(
     {
@@ -55,7 +62,14 @@ export default async function Vote({ searchParams }: PageProps) {
   );
 
   const submitted = !!ballot?.submitted_at || !!ballot?.locked_at;
-  const ranked = ballot?.rankings.map((r) => r.topicId) ?? [];
+  // Defensive: if a pre-existing ranking happens to contain a topic
+  // that has since been unassigned, drop it from the displayed list so
+  // the editor doesn't render an undefined thumbnail. The voter's next
+  // save will normalise the DB state.
+  const ranked =
+    ballot?.rankings
+      .map((r) => r.topicId)
+      .filter((id) => rankableIds.has(id)) ?? [];
 
   // Pre-render the thumbnails server-side and pass them through to the
   // client editor as a Map. Keeps signed-URL generation server-only.
