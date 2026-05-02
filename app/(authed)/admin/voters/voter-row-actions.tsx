@@ -17,6 +17,13 @@ interface Props {
   voterName: string;
   /** The signed-in admin's profile id — used to disable Delete on the caller's own row. */
   currentUserId: string;
+  /**
+   * True when this row is a non-voting admin (is_admin = true, no
+   * assigned topic — e.g. the professor). Hides the Reassign button:
+   * non-voting admins are not presenters, so a topic assignment makes
+   * no sense in their row.
+   */
+  isNonVotingAdmin: boolean;
   ballot_status: BallotStatus;
   hasArt: boolean;
   currentTopicId: number | null;
@@ -51,6 +58,7 @@ export function VoterRowActions({
   voterId,
   voterName,
   currentUserId,
+  isNonVotingAdmin,
   ballot_status,
   hasArt,
   currentTopicId,
@@ -83,8 +91,10 @@ export function VoterRowActions({
   // Hide Reassign entirely (vs. disabled-with-note) when the row is
   // unactionable for any reason. Function-level POLLS_LOCKED gate
   // (0021) and STUDENT_ALREADY_PRESENTED (0020) are the direct-RPC
-  // backstops.
-  const hideReassign = currentTopicPresented || pollsLocked;
+  // backstops. Non-voting admins are also hidden — they aren't
+  // presenters, so a topic assignment is conceptually wrong.
+  const hideReassign =
+    currentTopicPresented || pollsLocked || isNonVotingAdmin;
 
   // Delete eligibility — voters who have already presented or
   // submitted a ballot are permanent class artefacts, and admins can't

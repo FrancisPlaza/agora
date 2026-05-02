@@ -195,6 +195,7 @@ export default async function AdminVoters({ searchParams }: PageProps) {
                           currentUserId={me.id}
                           ballot_status={v.ballot_status}
                           hasArt={false /* admin voter list doesn't carry art state — handled in /admin/topics */}
+                          isNonVotingAdmin={v.is_admin && !v.assigned_topic}
                           currentTopicId={v.assigned_topic?.id ?? null}
                           currentTopicPresented={!!v.assigned_topic?.presented_at}
                           currentTopicPhilosopher={v.assigned_topic?.philosopher ?? null}
