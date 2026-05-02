@@ -55,13 +55,17 @@ export default async function TopicDetail({ params, searchParams }: PageProps) {
   const activeTab = tab === "class" ? "class" : "mine";
 
   const user = await getCurrentUser();
-  const isMyTopic =
-    !!user && topic.presenter_voter_id === user.id &&
-    (topic.state === "presented" || topic.state === "published");
+  // presenter_voter_id !== null implies state ≥ assigned (deriveState
+  // returns "unassigned" iff the FK is null), so the match alone is
+  // sufficient. Phase 7.6 lets presenters work pre-presentation.
+  const isMyTopic = !!user && topic.presenter_voter_id === user.id;
 
   const [myNote, artUrl, ballot] = await Promise.all([
     getMyNote(id),
-    topic.state === "published" && topic.art_image_path
+    // Privacy is enforced upstream by maskArtForViewer: voters see
+    // art_image_path = null on pre-presented topics; the presenter
+    // sees their own. Render whatever the mask hands us.
+    topic.art_image_path
       ? getTopicArtUrl(topic.art_image_path, { w: 1200, h: 700 })
       : Promise.resolve(null),
     getMyBallot(),
@@ -99,7 +103,7 @@ export default async function TopicDetail({ params, searchParams }: PageProps) {
           gradient/placeholder branches stay plain <div>s; the lightbox
           affordance shouldn't appear over content that isn't the
           actual student work. */}
-      {isPublished && artUrl ? (
+      {artUrl ? (
         <ArtworkLightbox src={artUrl} alt={topic.art_title ?? topic.theme}>
           <div className="rounded-lg overflow-hidden border border-line bg-white aspect-[4/3] md:aspect-[16/7]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -177,7 +181,7 @@ export default async function TopicDetail({ params, searchParams }: PageProps) {
             <div className="mt-3">
               <Link href={`/topic/${topic.id}/upload`}>
                 <Button kind="secondary" size="sm" icon="upload">
-                  {topic.state === "published" ? "Edit upload" : "Upload art"}
+                  {topic.art_image_path ? "Edit upload" : "Upload art"}
                 </Button>
               </Link>
             </div>

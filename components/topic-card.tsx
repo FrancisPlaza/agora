@@ -60,10 +60,12 @@ function OrderPill({ orderNum }: { orderNum: number }) {
 }
 
 export async function TopicCard({ topic, isMine, medal }: TopicCardProps) {
-  const artUrl =
-    topic.state === "published" && topic.art_image_path
-      ? await getTopicArtUrl(topic.art_image_path, { w: 400, h: 300 })
-      : null;
+  // The privacy decision lives in maskArtForViewer (lib/data/topics.ts):
+  // voters see art_image_path = null on pre-presented topics; the
+  // presenter sees their own. Render whatever the mask hands us.
+  const artUrl = topic.art_image_path
+    ? await getTopicArtUrl(topic.art_image_path, { w: 400, h: 300 })
+    : null;
 
   const statusPill = STATUS_PILL[topic.state];
 

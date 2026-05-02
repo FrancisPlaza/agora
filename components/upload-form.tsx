@@ -16,6 +16,7 @@ import { Field } from "@/components/ui/field";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { RemoveArtworkButton } from "@/components/remove-artwork-button";
 import { UploadPreview } from "@/components/upload-preview";
 import { uploadPresentation } from "@/lib/actions/presentation";
 import { countSentences, isAcceptedArtFile } from "@/lib/validation";
@@ -245,8 +246,11 @@ export function UploadForm({
             {state.error}
           </div>
         ) : null}
-        <div className="flex justify-end gap-2">
-          <Link href="/dashboard">
+        <div className="flex items-center gap-2">
+          {isEdit && existingPreviewUrl ? (
+            <RemoveArtworkButton topicId={topicId} />
+          ) : null}
+          <Link href="/dashboard" className="ml-auto">
             <Button kind="ghost" type="button" disabled={isPending}>
               Cancel
             </Button>

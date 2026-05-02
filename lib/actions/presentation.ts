@@ -196,3 +196,89 @@ export async function uploadPresentation(
   revalidatePath(`/topic/${topicId}/upload`);
   redirect("/dashboard");
 }
+
+/**
+ * Clear the four art fields and delete every storage object under the
+ * topic's prefix. Mirrors uploadPresentation's storage-wipe path. The
+ * topic returns to its pre-upload state ("assigned" or "presented"
+ * depending on presented_at). The presenter can re-upload after.
+ *
+ * The schema's published_requires_all_art constraint allows the
+ * all-null state — it only fires when art_uploaded_at is set without
+ * the other three fields. No migration needed.
+ */
+export async function removeArtwork(
+  topicId: number,
+): Promise<{ error?: string }> {
+  if (!Number.isFinite(topicId) || topicId < 1) {
+    return { error: "Invalid topic." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated." };
+
+  const { data: topic, error: topicError } = await supabase
+    .from("topics")
+    .select("id, presenter_voter_id, art_uploaded_at")
+    .eq("id", topicId)
+    .maybeSingle();
+
+  if (topicError || !topic) return { error: "Topic not found." };
+  if (topic.presenter_voter_id !== user.id) {
+    return { error: "Only the assigned presenter can remove artwork." };
+  }
+  if (!topic.art_uploaded_at) {
+    return { error: "No artwork to remove." };
+  }
+
+  // Wipe every object under {topicId}/. Mirrors the pre-write list+remove
+  // in uploadPresentation so we don't strand legacy companion files
+  // (e.g. older .preview.png siblings from before PDFs were dropped).
+  const { data: existing } = await supabase.storage
+    .from("presentations")
+    .list(`${topicId}/`);
+
+  if (existing && existing.length > 0) {
+    const paths = existing.map((o) => `${topicId}/${o.name}`);
+    const { error: removeError } = await supabase.storage
+      .from("presentations")
+      .remove(paths);
+    if (removeError) {
+      return {
+        error: `Failed to remove storage objects: ${removeError.message}`,
+      };
+    }
+  }
+
+  // Same .select("id") trick as uploadPresentation — surfaces a silent
+  // RLS denial as a real error rather than a "successful no-op".
+  const { data: updatedRows, error: updateError } = await supabase
+    .from("topics")
+    .update({
+      art_image_path: null,
+      art_uploaded_at: null,
+      art_title: null,
+      art_explanation: null,
+    })
+    .eq("id", topicId)
+    .select("id");
+
+  if (updateError) {
+    return { error: `Failed to clear artwork: ${updateError.message}` };
+  }
+  if (!updatedRows || updatedRows.length === 0) {
+    return {
+      error:
+        "Could not clear your artwork — the topic row was not updated. " +
+        "If this persists, ask a beadle to check your topic assignment.",
+    };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/topic/${topicId}`);
+  revalidatePath(`/topic/${topicId}/upload`);
+  redirect(`/topic/${topicId}`);
+}
