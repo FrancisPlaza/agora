@@ -10,8 +10,10 @@ import { getCurrentUser } from "@/lib/auth";
 import { getMyNote } from "@/lib/data/notes";
 import { getTopicArtUrl } from "@/lib/data/storage";
 import { getTopic } from "@/lib/data/topics";
+import { getMyBallot } from "@/lib/data/voting";
 import { AddToRankingForm } from "./add-to-ranking-form";
 import { ClassNotes } from "./class-notes";
+import { RemoveFromRankingForm } from "./remove-from-ranking-form";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -42,12 +44,15 @@ export default async function TopicDetail({ params, searchParams }: PageProps) {
     !!user && topic.presenter_voter_id === user.id &&
     (topic.state === "presented" || topic.state === "published");
 
-  const [myNote, artUrl] = await Promise.all([
+  const [myNote, artUrl, ballot] = await Promise.all([
     getMyNote(id),
     topic.state === "published" && topic.art_image_path
       ? getTopicArtUrl(topic.art_image_path, { w: 1200, h: 700 })
       : Promise.resolve(null),
+    getMyBallot(),
   ]);
+
+  const isRanked = !!ballot?.rankings.some((r) => r.topicId === id);
 
   const isPublished = topic.state === "published";
   const stateBadge =
@@ -168,6 +173,8 @@ export default async function TopicDetail({ params, searchParams }: PageProps) {
             <span className="text-text-2 text-[13px] italic">
               No presenter assigned yet
             </span>
+          ) : isRanked ? (
+            <RemoveFromRankingForm topicId={topic.id} />
           ) : (
             <AddToRankingForm topicId={topic.id} />
           )}

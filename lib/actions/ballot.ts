@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getMyBallot } from "@/lib/data/voting";
@@ -96,4 +97,40 @@ export async function addToMyRanking(
   if (result.error) return result;
 
   redirect(`/vote?focus=${topicId}`);
+}
+
+/**
+ * Drop a topic from the current draft and re-rank the survivors
+ * contiguously (1, 2, 3…). The mirror of `addToMyRanking`. Used by the
+ * topic-detail "Remove from my ranking" CTA.
+ *
+ * No redirect — the form re-renders the topic page in place so the user
+ * can continue reading. revalidatePath flushes the router cache so the
+ * next render reflects the new ballot state.
+ */
+export async function removeFromMyRanking(
+  topicId: number,
+): Promise<{ error?: string }> {
+  if (!Number.isFinite(topicId) || topicId < 1) {
+    return { error: "Invalid topic." };
+  }
+
+  const ballot = await getMyBallot();
+  const current = ballot?.rankings ?? [];
+
+  // Not in ranking — no-op success. Page re-renders and shows Add.
+  if (!current.some((r) => r.topicId === topicId)) {
+    revalidatePath(`/topic/${topicId}`);
+    return {};
+  }
+
+  const next = current
+    .filter((r) => r.topicId !== topicId)
+    .map((r, i) => ({ topicId: r.topicId, rank: i + 1 }));
+
+  const result = await saveDraftRankings(next);
+  if (result.error) return result;
+
+  revalidatePath(`/topic/${topicId}`);
+  return {};
 }
