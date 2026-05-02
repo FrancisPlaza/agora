@@ -3,7 +3,6 @@ import {
   countSentences,
   fileExtensionForStorage,
   isAcceptedArtFile,
-  isPdf,
 } from "./validation";
 
 describe("countSentences", () => {
@@ -34,24 +33,38 @@ describe("countSentences", () => {
 });
 
 describe("isAcceptedArtFile", () => {
-  it("accepts a 4 MB PNG", () => {
+  it("accepts a 2 MB PNG", () => {
     expect(
       isAcceptedArtFile({
         type: "image/png",
         name: "art.png",
-        size: 4 * 1024 * 1024,
+        size: 2 * 1024 * 1024,
       }),
     ).toEqual({ ok: true });
   });
 
-  it("rejects a 12 MB PDF as too large", () => {
+  it("rejects a 4 MB image as too large", () => {
     const result = isAcceptedArtFile({
-      type: "application/pdf",
-      name: "big.pdf",
-      size: 12 * 1024 * 1024,
+      type: "image/png",
+      name: "big.png",
+      size: 4 * 1024 * 1024,
     });
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.reason).toMatch(/10 MB/);
+    if (!result.ok) expect(result.reason).toMatch(/3 MB/);
+  });
+
+  it("rejects PDFs (no longer an accepted type)", () => {
+    const result = isAcceptedArtFile({
+      type: "application/pdf",
+      name: "doc.pdf",
+      size: 1 * 1024 * 1024,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe(
+        "File type not accepted. Use JPG, PNG, GIF, or WEBP.",
+      );
+    }
   });
 
   it("rejects an empty file", () => {
@@ -71,7 +84,7 @@ describe("isAcceptedArtFile", () => {
     ).toEqual({ ok: true });
   });
 
-  it("rejects HEIC with the new accepted-types message", () => {
+  it("rejects HEIC with the accepted-types message", () => {
     const result = isAcceptedArtFile({
       type: "image/heic",
       name: "iphone-shot.heic",
@@ -80,7 +93,7 @@ describe("isAcceptedArtFile", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.reason).toBe(
-        "File type not accepted. Use JPG, PNG, GIF, WEBP, or PDF.",
+        "File type not accepted. Use JPG, PNG, GIF, or WEBP.",
       );
     }
   });
@@ -104,14 +117,8 @@ describe("isAcceptedArtFile", () => {
   });
 });
 
-describe("isPdf and fileExtensionForStorage", () => {
-  it("isPdf detects PDF by MIME or extension", () => {
-    expect(isPdf({ type: "application/pdf", name: "x.pdf", size: 1 })).toBe(true);
-    expect(isPdf({ type: "", name: "x.pdf", size: 1 })).toBe(true);
-    expect(isPdf({ type: "image/png", name: "x.png", size: 1 })).toBe(false);
-  });
-
-  it("fileExtensionForStorage prefers the filename extension", () => {
+describe("fileExtensionForStorage", () => {
+  it("prefers the filename extension", () => {
     expect(
       fileExtensionForStorage({ type: "image/jpeg", name: "art.jpg", size: 1 }),
     ).toBe("jpg");

@@ -19,11 +19,12 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      // Default Next 16 cap is 1MB. Headroom over the 10MB MAX_BYTES
-      // app gate covers FormData overhead + the PDF preview blob
-      // (~1-2MB). Files between 10-12MB pass to the action and are
-      // rejected there with the friendly "File is over 10 MB." copy.
-      bodySizeLimit: "12mb",
+      // Default Next 16 cap is 1MB. Sized to fit Vercel's 4.5MB
+      // platform body limit with a small buffer above the 3MB
+      // MAX_BYTES app gate. Anything between 3 and 4MB is rejected
+      // by the validation layer with the friendly "File is over
+      // 3 MB." copy; anything above 4MB is rejected here.
+      bodySizeLimit: "4mb",
     },
   },
 };

@@ -18,11 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { UploadPreview } from "@/components/upload-preview";
 import { uploadPresentation } from "@/lib/actions/presentation";
-import {
-  countSentences,
-  isAcceptedArtFile,
-  isPdf,
-} from "@/lib/validation";
+import { countSentences, isAcceptedArtFile } from "@/lib/validation";
 
 interface UploadFormProps {
   topicId: number;
@@ -48,8 +44,6 @@ interface FormState {
   error?: string;
 }
 
-const PDF_RENDER_WIDTH = 600;
-
 export function UploadForm({
   topicId,
   orderNum,
@@ -66,12 +60,10 @@ export function UploadForm({
   const [artTitle, setArtTitle] = useState(initialArtTitle);
   const [artExplanation, setArtExplanation] = useState(initialArtExplanation);
   const [file, setFile] = useState<File | null>(null);
-  const [pdfPreviewBlob, setPdfPreviewBlob] = useState<Blob | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(
     existingPreviewUrl,
   );
   const [fileError, setFileError] = useState<string | null>(null);
-  const [renderingPdf, setRenderingPdf] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -104,9 +96,6 @@ export function UploadForm({
     formData.set("artExplanation", artExplanation);
     if (file) {
       formData.set("file", file);
-      if (pdfPreviewBlob) {
-        formData.set("pdfPreview", pdfPreviewBlob, "preview.png");
-      }
     } else {
       // Make sure a stale blank file input doesn't sneak through.
       formData.delete("file");
@@ -120,7 +109,7 @@ export function UploadForm({
     null,
   );
 
-  async function adoptFile(picked: File) {
+  function adoptFile(picked: File) {
     setFileError(null);
     const check = isAcceptedArtFile({
       type: picked.type,
@@ -133,51 +122,29 @@ export function UploadForm({
     }
 
     setFile(picked);
-    setPdfPreviewBlob(null);
 
     if (previewUrl && previewUrl.startsWith("blob:")) {
       URL.revokeObjectURL(previewUrl);
     }
 
-    const meta = { type: picked.type, name: picked.name, size: picked.size };
-
-    if (isPdf(meta)) {
-      setRenderingPdf(true);
-      try {
-        const blob = await renderPdfFirstPage(picked);
-        setPdfPreviewBlob(blob);
-        setPreviewUrl(URL.createObjectURL(blob));
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Could not render PDF preview.";
-        setFileError(`PDF preview failed: ${message}`);
-        setFile(null);
-        setPdfPreviewBlob(null);
-        setPreviewUrl(existingPreviewUrl);
-      } finally {
-        setRenderingPdf(false);
-      }
-    } else {
-      // Browsers render JPG / PNG / GIF / WEBP natively via <img>.
-      setPreviewUrl(URL.createObjectURL(picked));
-    }
+    // Browsers render JPG / PNG / GIF / WEBP natively via <img>.
+    setPreviewUrl(URL.createObjectURL(picked));
   }
 
   function onPick(e: ChangeEvent<HTMLInputElement>) {
     const picked = e.target.files?.[0];
-    if (picked) void adoptFile(picked);
+    if (picked) adoptFile(picked);
   }
 
   function onDrop(e: DragEvent<HTMLDivElement>) {
     e.preventDefault();
     setDragOver(false);
     const picked = e.dataTransfer.files?.[0];
-    if (picked) void adoptFile(picked);
+    if (picked) adoptFile(picked);
   }
 
   function clearFile() {
     setFile(null);
-    setPdfPreviewBlob(null);
     if (previewUrl && previewUrl.startsWith("blob:")) {
       URL.revokeObjectURL(previewUrl);
     }
@@ -213,15 +180,13 @@ export function UploadForm({
             Artwork
           </div>
           <div className="text-xs text-text-2 mb-3">
-            JPG, PNG, GIF, WEBP, or PDF · 10 MB max. PDFs use the first page
-            as preview.
+            JPG, PNG, GIF, or WEBP · 3 MB max.
           </div>
           {file ? (
             <FilePicked
               file={file}
               onReplace={() => fileInputRef.current?.click()}
               onClear={clearFile}
-              renderingPdf={renderingPdf}
             />
           ) : (
             <DropZone
@@ -240,7 +205,7 @@ export function UploadForm({
             ref={fileInputRef}
             type="file"
             className="hidden"
-            accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,.pdf"
+            accept="image/jpeg,image/png,image/gif,image/webp"
             onChange={onPick}
           />
           {fileError ? (
@@ -286,7 +251,7 @@ export function UploadForm({
               Cancel
             </Button>
           </Link>
-          <Button kind="primary" type="submit" disabled={isPending || renderingPdf}>
+          <Button kind="primary" type="submit" disabled={isPending}>
             {isPending
               ? "Saving…"
               : submitLabel ?? (isEdit ? "Update" : "Save and publish")}
@@ -371,27 +336,19 @@ function FilePicked({
   file,
   onReplace,
   onClear,
-  renderingPdf,
 }: {
   file: File;
   onReplace: () => void;
   onClear: () => void;
-  renderingPdf: boolean;
 }) {
   return (
     <div className="flex items-center gap-3 p-3.5 bg-surface-alt rounded border border-line-2">
       <div className="w-10 h-10 rounded bg-white border border-line flex items-center justify-center shrink-0 text-text-2">
-        <Icon
-          name={file.type === "application/pdf" ? "file" : "upload"}
-          size={18}
-        />
+        <Icon name="upload" size={18} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="font-medium text-[13px] truncate">{file.name}</div>
-        <div className="text-text-2 text-xs">
-          {formatBytes(file.size)}
-          {renderingPdf ? " · rendering preview…" : ""}
-        </div>
+        <div className="text-text-2 text-xs">{formatBytes(file.size)}</div>
       </div>
       <Button kind="ghost" size="sm" type="button" onClick={onReplace}>
         Replace
@@ -407,48 +364,4 @@ function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
   return `${(n / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-// ─── PDF first-page render (client-side) ──────────────────────────────────
-
-async function renderPdfFirstPage(pdfFile: File): Promise<Blob> {
-  // Dynamic import keeps pdfjs-dist out of the main bundle. The lib is
-  // only loaded if the user actually picks a PDF.
-  const pdfjs = await import("pdfjs-dist");
-
-  // Worker setup. With Turbopack, `new URL('pdfjs-dist/build/...', import.meta.url)`
-  // resolves to a bundled asset URL the worker can fetch.
-  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    "pdfjs-dist/build/pdf.worker.min.mjs",
-    import.meta.url,
-  ).toString();
-
-  const buffer = await pdfFile.arrayBuffer();
-  const doc = await pdfjs.getDocument({ data: buffer }).promise;
-  try {
-    const page = await doc.getPage(1);
-    const viewport = page.getViewport({ scale: 1 });
-    const scale = PDF_RENDER_WIDTH / viewport.width;
-    const scaled = page.getViewport({ scale });
-
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.ceil(scaled.width);
-    canvas.height = Math.ceil(scaled.height);
-    const context = canvas.getContext("2d");
-    if (!context) throw new Error("Canvas context unavailable.");
-
-    await page.render({
-      canvas,
-      canvasContext: context,
-      viewport: scaled,
-    }).promise;
-
-    const blob: Blob | null = await new Promise((resolve) =>
-      canvas.toBlob((b) => resolve(b), "image/png"),
-    );
-    if (!blob) throw new Error("Could not export preview as PNG.");
-    return blob;
-  } finally {
-    await doc.destroy();
-  }
 }

@@ -21,7 +21,7 @@ Read these before any work:
 
 A web app for a 32-student law school class. Each student presents one legal philosopher's thinking through:
 
-- one piece of visual artwork (image or PDF), uploaded after they present
+- one piece of visual artwork (JPG / PNG / GIF / WEBP), uploaded after they present
 - a 5-7 sentence written explanation
 - a 3-5 minute oral presentation in class
 
@@ -41,7 +41,6 @@ Agora doubles as a class gallery: the dashboard fills in over the term as studen
 - **Drag and drop:** `@dnd-kit/core` + `@dnd-kit/sortable` (touch-capable, accessible)
 - **Animations:** Framer Motion, used sparingly (ranking-row reorder, modal transitions)
 - **Image handling:** Supabase Storage with built-in image transformations for thumbnails
-- **PDF preview:** server-side first-page extraction (e.g. `pdf-lib` or `pdfjs-dist`) at upload time
 
 ---
 
@@ -134,8 +133,7 @@ This is a trust property of the system. Two beadles who are also voters need to 
 ## File handling
 
 - Artwork goes to Supabase Storage bucket `presentations`, path `{topic_id}/{filename}`.
-- Accepted: JPG, PNG, GIF, WEBP, PDF. Max 10 MB.
-- For PDFs, extract the first page at upload time and store as `{topic_id}/{filename}.preview.png` for fast thumbnail rendering.
+- Accepted: JPG, PNG, GIF, WEBP. Max 3 MB (Vercel's 4.5 MB request-body cap minus FormData overhead).
 - Bucket policies: `INSERT` allowed only to the matching presenter (RLS via path), `SELECT` for all approved voters, `UPDATE` not allowed (replace = delete + re-insert).
 
 ---

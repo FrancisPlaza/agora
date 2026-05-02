@@ -7,20 +7,18 @@ import {
   countSentences,
   fileExtensionForStorage,
   isAcceptedArtFile,
-  isPdf,
 } from "@/lib/validation";
 
 const MIN_SENTENCES = 5;
 const MAX_SENTENCES = 7;
 const MAX_TITLE = 200;
-const MAX_PREVIEW_BYTES = 2 * 1024 * 1024;
 
 /**
  * Single action handles both first-publish and metadata-only edits. If
  * `file` is missing or empty, only `art_title` and `art_explanation`
  * update — no storage ops, `art_image_path` and `art_uploaded_at` left
  * alone. Storage delete-then-upload runs only when a new file is provided
- * so changing PDF → image doesn't leave a stale `.preview.png` behind.
+ * so replacing artwork doesn't leave stale objects under the topic prefix.
  *
  * Auth, presenter-match, and `presented`/`published` state checks happen
  * up front for friendly errors. RLS (`topics_presenter_update_art`) plus
@@ -43,7 +41,6 @@ export async function uploadPresentation(
   const artTitle = String(formData.get("artTitle") ?? "").trim();
   const artExplanation = String(formData.get("artExplanation") ?? "").trim();
   const fileEntry = formData.get("file");
-  const previewEntry = formData.get("pdfPreview");
 
   // ── Auth + topic load ────────────────────────────────────────────────
   const supabase = await createClient();
@@ -110,28 +107,9 @@ export async function uploadPresentation(
     });
     const newPath = `${topicId}/artwork.${ext}`;
 
-    const fileIsPdf = isPdf({
-      type: fileEntry.type,
-      name: fileEntry.name,
-      size: fileEntry.size,
-    });
-
-    let previewBlob: Blob | null = null;
-    if (fileIsPdf) {
-      if (!(previewEntry instanceof Blob) || previewEntry.size === 0) {
-        return {
-          error:
-            "PDF preview missing. Try selecting the file again — preview generation runs in your browser.",
-        };
-      }
-      if (previewEntry.size > MAX_PREVIEW_BYTES) {
-        return { error: "PDF preview is too large." };
-      }
-      previewBlob = previewEntry;
-    }
-
-    // Wipe any prior files under this topic's prefix so PDF → image
-    // (or vice versa) doesn't leave a stale preview / original behind.
+    // Wipe any prior files under this topic's prefix so a re-upload
+    // doesn't leave a stale original behind (and clears any legacy
+    // PDF + .preview.png from before PDFs were dropped as a type).
     const { data: existing } = await supabase.storage
       .from("presentations")
       .list(`${topicId}/`);
@@ -154,20 +132,6 @@ export async function uploadPresentation(
       });
     if (uploadError) {
       return { error: `Failed to upload artwork: ${uploadError.message}` };
-    }
-
-    if (previewBlob) {
-      const { error: previewError } = await supabase.storage
-        .from("presentations")
-        .upload(`${newPath}.preview.png`, previewBlob, {
-          contentType: "image/png",
-          upsert: true,
-        });
-      if (previewError) {
-        return {
-          error: `Failed to upload PDF preview: ${previewError.message}`,
-        };
-      }
     }
 
     nextArtImagePath = newPath;

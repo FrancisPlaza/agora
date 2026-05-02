@@ -21,7 +21,7 @@ export type AcceptedArtCheck =
   | { ok: true }
   | { ok: false; reason: string };
 
-const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+const MAX_BYTES = 3 * 1024 * 1024; // 3 MB — fits Vercel's 4.5 MB request body cap with FormData overhead.
 
 const ACCEPTED_MIME = new Set([
   "image/jpeg",
@@ -29,7 +29,6 @@ const ACCEPTED_MIME = new Set([
   "image/png",
   "image/gif",
   "image/webp",
-  "application/pdf",
 ]);
 
 const ACCEPTED_EXT = new Set([
@@ -38,7 +37,6 @@ const ACCEPTED_EXT = new Set([
   "png",
   "gif",
   "webp",
-  "pdf",
 ]);
 
 function fileExtension(name: string): string {
@@ -48,7 +46,7 @@ function fileExtension(name: string): string {
 }
 
 /**
- * Accept JPG / PNG / GIF / WEBP / PDF, ≤ 10 MB.
+ * Accept JPG / PNG / GIF / WEBP, ≤ 3 MB.
  *
  * Both MIME and extension are checked — browsers report inconsistently
  * for some formats (especially when files arrive with no MIME header
@@ -59,7 +57,7 @@ export function isAcceptedArtFile(file: AcceptedArtInput): AcceptedArtCheck {
     return { ok: false, reason: "File is empty." };
   }
   if (file.size > MAX_BYTES) {
-    return { ok: false, reason: "File is over 10 MB." };
+    return { ok: false, reason: "File is over 3 MB." };
   }
 
   const ext = fileExtension(file.name);
@@ -69,26 +67,17 @@ export function isAcceptedArtFile(file: AcceptedArtInput): AcceptedArtCheck {
   if (!mimeOk && !extOk) {
     return {
       ok: false,
-      reason: "File type not accepted. Use JPG, PNG, GIF, WEBP, or PDF.",
+      reason: "File type not accepted. Use JPG, PNG, GIF, or WEBP.",
     };
   }
 
   return { ok: true };
 }
 
-/** True if the file is a PDF (by either MIME or extension). */
-export function isPdf(file: AcceptedArtInput): boolean {
-  return (
-    file.type.toLowerCase() === "application/pdf" ||
-    fileExtension(file.name) === "pdf"
-  );
-}
-
 /** Lowercase extension chosen for the storage path. Defaults to mime guess. */
 export function fileExtensionForStorage(file: AcceptedArtInput): string {
   const ext = fileExtension(file.name);
   if (ext) return ext;
-  if (file.type === "application/pdf") return "pdf";
   if (file.type === "image/jpeg") return "jpg";
   if (file.type === "image/png") return "png";
   if (file.type === "image/gif") return "gif";
