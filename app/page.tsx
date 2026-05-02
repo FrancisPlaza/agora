@@ -1,7 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { AgoraWordmark } from "@/components/ui/agora-wordmark";
 import { Button } from "@/components/ui/button";
 import { HeroAnimation } from "@/components/hero-animation";
+
+// `absolute` bypasses the root layout's "%s | Agora" template, which
+// would otherwise wrap this into "Agora · Where consensus happens |
+// Agora". Authed users are redirected away from / by the middleware,
+// so in practice this title is only seen by unauthenticated visitors.
+export const metadata: Metadata = {
+  title: { absolute: "Agora · Where consensus happens" },
+};
 
 const HERO_BG: React.CSSProperties = {
   background: [
