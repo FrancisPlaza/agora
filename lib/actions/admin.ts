@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { dispatchApprovalEmail } from "@/lib/email/approval";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { runTally } from "@/lib/actions/tally";
 
@@ -61,6 +62,27 @@ export async function approveVoter(
   } as never);
 
   if (error) return rpcError(error);
+
+  // Best-effort approval email. Generates a magic link, looks up topic
+  // info, sends via Resend. Failures are non-blocking — they log to
+  // console.error and write an audit_log row but never roll back the
+  // approval that just succeeded.
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const supabaseAdmin = createServiceClient();
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
+      "http://localhost:3000";
+    await dispatchApprovalEmail({
+      supabase,
+      supabaseAdmin,
+      targetId,
+      topicId,
+      actorId: user.id,
+      siteUrl,
+    });
+  }
+
   revalidateAdmin();
   return {};
 }
