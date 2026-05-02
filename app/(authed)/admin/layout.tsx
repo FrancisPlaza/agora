@@ -26,7 +26,7 @@ export default async function AdminLayout({
     <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-4 md:py-6">
       <div className="flex items-center gap-2 mb-2">
         <Badge tone="navy" icon="shield">
-          Beadle
+          Admin
         </Badge>
       </div>
       <div className="mb-5">

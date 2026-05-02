@@ -148,7 +148,7 @@ export default async function AdminVoters({ searchParams }: PageProps) {
                             {v.is_admin ? (
                               <span className="ml-1.5 align-middle">
                                 <Badge tone="navy" icon="shield">
-                                  Beadle
+                                  Admin
                                 </Badge>
                               </span>
                             ) : null}
