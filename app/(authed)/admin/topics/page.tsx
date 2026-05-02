@@ -90,13 +90,17 @@ export default async function AdminTopics({ searchParams }: PageProps) {
   // yet. Migration 0020's assign_topic clears the source row atomically,
   // so swapping a voter from one unpresented topic to another is a
   // legitimate flow. Voters whose current topic is already presented are
-  // locked. Non-voting admins are excluded — they're not presenters.
+  // locked.
+  //
+  // Only NON-voting admins are excluded — they're not presenters.
+  // Beadles (is_admin=true AND have a topic) are voters too and should
+  // appear as valid targets.
   const reassignableVoters = voters
-    .filter(
-      (v) =>
-        !v.is_admin &&
-        (!v.assigned_topic || v.assigned_topic.presented_at === null),
-    )
+    .filter((v) => {
+      const isNonVotingAdmin = v.is_admin && !v.assigned_topic;
+      if (isNonVotingAdmin) return false;
+      return !v.assigned_topic || v.assigned_topic.presented_at === null;
+    })
     .map((v) => ({
       id: v.id,
       full_name: v.full_name,
