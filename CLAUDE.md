@@ -13,7 +13,7 @@ Read these before any work:
 - `specs/design-corrections.md` — five fixes from the design review; apply during build.
 - `specs/schema.md` — Supabase tables, RLS policies, triggers, storage rules. Authoritative for Phase 1.
 - `specs/irv-spec.md` — sequential IRV algorithm with deterministic tie-break rules and test fixtures. The tally must match these tests.
-- `Agora.html` + `src/*.jsx` — the design prototype. **Read-only reference.** Visual system, palette, type, motion, and screen layouts are locked. Defer to it for visual decisions; don't reuse the JSX as production code.
+- `src/*.jsx` — the design prototype. **Read-only reference.** Visual system, palette, type, motion, and screen layouts are locked. Defer to it for visual decisions; don't reuse the JSX as production code.
 
 ---
 
@@ -140,7 +140,7 @@ This is a trust property of the system. Two beadles who are also voters need to 
 
 ## Brand and design system
 
-Visuals come from `Agora.html` and `src/styles.css`. Transcribe to Tailwind config:
+Visuals come from `src/styles.css`. Transcribe to Tailwind config:
 
 - **Palette:** primary navy `#0A2540`, surface `#FFFFFF` and `#F6F9FC`, accent violet `#635BFF`, highlight amber `#B8860B`, text `#1A1F36` / `#64748B`
 - **Type:** Inter (UI), Source Serif 4 (headings, topic titles)
@@ -158,8 +158,7 @@ Re-use the visual treatment, not the prototype JSX itself. The JSX is static dem
 ```
 agora/
 ├── CLAUDE.md                 ← this file
-├── Agora.html                ← design prototype (read-only reference)
-├── src/                      ← prototype JSX (read-only reference)
+├── src/                      ← design prototype JSX (read-only reference)
 ├── specs/
 │   ├── design-corrections.md
 │   ├── schema.md
@@ -243,7 +242,6 @@ Report back at the end of each phase with: what shipped, what's next, what block
 
 - **Never delete files without explicit confirmation from Francis.**
 - Don't modify files in `src/` (the design prototype) — read-only reference.
-- Don't modify `Agora.html` — read-only reference.
 - Don't introduce new top-level dependencies without flagging.
 - Don't commit secrets. Use `.env.local` (gitignored). Document required env vars in `specs/`.
 - Migrations are append-only. Never edit a committed migration; write a new one.

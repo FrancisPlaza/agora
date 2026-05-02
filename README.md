@@ -16,7 +16,7 @@ Each student presents one legal philosopher through a piece of artwork, a short 
 - **Drag and drop:** `@dnd-kit/core` + `@dnd-kit/sortable`
 - **Animations:** Framer Motion (used sparingly)
 
-The full design system, screen prototypes, and tone reference live in `Agora.html` and `src/*.jsx` (read-only — production code is in `app/` and `components/`).
+The full design system, screen prototypes, and tone reference live in `src/*.jsx` (read-only — production code is in `app/` and `components/`).
 
 ---
 
@@ -110,8 +110,7 @@ agora/
 ├── scripts/                  One-off seed and admin scripts
 ├── specs/                    Working specs, phase summaries, deploy checklist
 ├── public/                   Static assets
-├── Agora.html                Design prototype (read-only)
-├── src/                      Prototype JSX (read-only)
+├── src/                      Design prototype JSX (read-only)
 └── CLAUDE.md                 Project instructions (read first)
 ```
 
