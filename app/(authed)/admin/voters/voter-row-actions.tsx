@@ -15,6 +15,8 @@ import type { BallotStatus, UnassignedTopic } from "@/lib/data/admin";
 interface Props {
   voterId: string;
   voterName: string;
+  /** The signed-in admin's profile id — used to disable Delete on the caller's own row. */
+  currentUserId: string;
   ballot_status: BallotStatus;
   hasArt: boolean;
   currentTopicId: number | null;
@@ -37,6 +39,7 @@ interface Props {
 
 const DELETE_ERROR_COPY: Record<DeleteVoterError, string> = {
   NOT_AUTHORISED: "You aren't authorised to delete voters.",
+  SELF_DELETE_FORBIDDEN: "You can't delete your own account.",
   NOT_FOUND: "Voter no longer exists.",
   ALREADY_PRESENTED: "Cannot delete — they've already presented.",
   BALLOT_SUBMITTED: "Cannot delete — ballot already submitted.",
@@ -47,6 +50,7 @@ const DELETE_ERROR_COPY: Record<DeleteVoterError, string> = {
 export function VoterRowActions({
   voterId,
   voterName,
+  currentUserId,
   ballot_status,
   hasArt,
   currentTopicId,
@@ -83,13 +87,17 @@ export function VoterRowActions({
   const hideReassign = currentTopicPresented || pollsLocked;
 
   // Delete eligibility — voters who have already presented or
-  // submitted a ballot are permanent class artefacts. The action's
-  // server-side gate is the backstop for races.
-  const deleteBlockReason: string | null = currentTopicPresented
-    ? "Cannot delete — already presented"
-    : ballot_status === "submitted"
-      ? "Cannot delete — ballot submitted"
-      : null;
+  // submitted a ballot are permanent class artefacts, and admins can't
+  // delete themselves through this UI. The action's server-side gates
+  // are the backstops for races.
+  const isSelf = voterId === currentUserId;
+  const deleteBlockReason: string | null = isSelf
+    ? "Cannot delete — this is you"
+    : currentTopicPresented
+      ? "Cannot delete — already presented"
+      : ballot_status === "submitted"
+        ? "Cannot delete — ballot submitted"
+        : null;
 
   return (
     <div className="flex justify-end gap-2 flex-wrap items-center">

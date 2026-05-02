@@ -185,6 +185,25 @@ describe("deleteVoter — auth", () => {
     const result = await deleteVoter(TARGET_ID);
     expect(result).toEqual({ ok: false, error: "NOT_AUTHORISED" });
   });
+
+  it("returns SELF_DELETE_FORBIDDEN when admin targets their own profile", async () => {
+    const stubs = makeStubs({
+      user: { id: ADMIN_ID },
+      callerProfile: approvedAdmin(),
+    });
+    mockedCreateClient.mockResolvedValue(stubs.supabase as never);
+    mockedCreateServiceClient.mockReturnValue(stubs.supabaseAdmin as never);
+
+    const result = await deleteVoter(ADMIN_ID);
+    expect(result).toEqual({ ok: false, error: "SELF_DELETE_FORBIDDEN" });
+    expect(stubs.deleteUser).not.toHaveBeenCalled();
+    // Target profile should NOT be loaded — the guard fires before
+    // the second profile select.
+    const profileSelects = stubs.calls.filter((c) =>
+      c.kind.startsWith("profiles.select"),
+    );
+    expect(profileSelects).toHaveLength(1);
+  });
 });
 
 // ── Validation ─────────────────────────────────────────────────────────

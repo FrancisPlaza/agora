@@ -125,6 +125,7 @@ export async function rejectVoter(
 
 export type DeleteVoterError =
   | "NOT_AUTHORISED"
+  | "SELF_DELETE_FORBIDDEN"
   | "NOT_FOUND"
   | "ALREADY_PRESENTED"
   | "BALLOT_SUBMITTED"
@@ -172,6 +173,14 @@ export async function deleteVoter(
 
   if (!caller || caller.status !== "approved" || !caller.is_admin) {
     return { ok: false, error: "NOT_AUTHORISED" };
+  }
+
+  // Self-delete guard. Even an admin shouldn't be able to remove their
+  // own profile through the voters list — would lock them out and
+  // strand any in-flight admin action mid-flight. The UI also disables
+  // the button on the caller's own row; this is the backstop.
+  if (caller.id === targetProfileId) {
+    return { ok: false, error: "SELF_DELETE_FORBIDDEN" };
   }
 
   // 2. Load target + assigned topic + ballot in one shot. Embedded

@@ -3,6 +3,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Badge, type BadgeTone } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Chips } from "@/components/ui/chips";
+import { requireAdmin } from "@/lib/auth";
 import {
   getAllVoters,
   getReassignableTopics,
@@ -67,7 +68,8 @@ export default async function AdminVoters({ searchParams }: PageProps) {
       ? undefined
       : (filter as ProfileStatus | "admins");
 
-  const [voters, reassignableTopics, voting] = await Promise.all([
+  const [me, voters, reassignableTopics, voting] = await Promise.all([
+    requireAdmin(),
     getAllVoters({ statusFilter }),
     getReassignableTopics(),
     getVotingState(),
@@ -190,6 +192,7 @@ export default async function AdminVoters({ searchParams }: PageProps) {
                         <VoterRowActions
                           voterId={v.id}
                           voterName={v.full_name}
+                          currentUserId={me.id}
                           ballot_status={v.ballot_status}
                           hasArt={false /* admin voter list doesn't carry art state — handled in /admin/topics */}
                           currentTopicId={v.assigned_topic?.id ?? null}
