@@ -32,6 +32,20 @@ const FILTERS: Array<{ id: Filter; label: string }> = [
   { id: "published", label: "Published" },
 ];
 
+const EMPTY_STATE: Record<Filter, { headline: string; sub: string | null }> = {
+  all: { headline: "Nothing matches this filter", sub: null },
+  unassigned: { headline: "Nothing matches this filter", sub: null },
+  assigned: { headline: "Nothing matches this filter", sub: null },
+  presented: {
+    headline: "Nothing presented yet",
+    sub: "Topics will land here as they’re marked presented.",
+  },
+  published: {
+    headline: "Nothing published yet",
+    sub: "Topics will land here once presenters upload their artwork.",
+  },
+};
+
 interface PageProps {
   searchParams: Promise<{ filter?: string }>;
 }
@@ -132,8 +146,25 @@ export default async function AdminTopics({ searchParams }: PageProps) {
               </tr>
             </thead>
             <tbody>
-              {visible.map((t) => (
-                <tr key={t.id} className="border-b border-line-2 last:border-0">
+              {visible.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="text-center px-3 py-12 text-text-2"
+                  >
+                    <div className="font-serif text-lg mb-1">
+                      {EMPTY_STATE[filter].headline}
+                    </div>
+                    {EMPTY_STATE[filter].sub ? (
+                      <div className="text-[13px]">
+                        {EMPTY_STATE[filter].sub}
+                      </div>
+                    ) : null}
+                  </td>
+                </tr>
+              ) : (
+                visible.map((t) => (
+                  <tr key={t.id} className="border-b border-line-2 last:border-0">
                   <td className="px-3 py-3 font-mono tabular-nums text-[13px] text-text-2">
                     {String(t.order_num).padStart(2, "0")}
                   </td>
@@ -168,7 +199,8 @@ export default async function AdminTopics({ searchParams }: PageProps) {
                     />
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>
