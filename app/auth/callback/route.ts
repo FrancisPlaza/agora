@@ -23,31 +23,25 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = await createClient();
-  const tExchange = Date.now();
   const { error } = await supabase.auth.exchangeCodeForSession(code);
-  console.log(`[perf] callback.exchangeCode ${Date.now() - tExchange}ms`);
   if (error) {
     return NextResponse.redirect(
       new URL(`/signin?error=${encodeURIComponent(error.message)}`, request.url),
     );
   }
 
-  const tUser = Date.now();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  console.log(`[perf] callback.getUser ${Date.now() - tUser}ms`);
   if (!user) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  const tProfile = Date.now();
   const { data: profile, error: profileErr } = await supabase
     .from("profiles")
     .select("status")
     .eq("id", user.id)
     .maybeSingle();
-  console.log(`[perf] callback.profile ${Date.now() - tProfile}ms`);
 
   // Surface DB-side failures (RLS, missing grants, dropped FK) instead
   // of silently treating them as a missing profile. The fallback to
