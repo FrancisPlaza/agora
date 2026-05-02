@@ -2,6 +2,7 @@
   "name": "agora",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
@@ -13,6 +14,7 @@
     "db:reset": "supabase db reset",
     "db:migrate": "supabase migration up --local",
     "db:types": "supabase gen types typescript --local 2>/dev/null | grep -v '^Connecting' > lib/supabase/database.types.ts",
+    "seed:sandbox": "npx tsx scripts/seed-sandbox.ts",
     "seed:prod-admins": "npx tsx scripts/seed-prod-admins.ts"
   },
   "dependencies": {
