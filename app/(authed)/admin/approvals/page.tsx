@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import { Card } from "@/components/ui/card";
 import {
   getPendingApprovals,
   getUnassignedTopics,
 } from "@/lib/data/admin";
 import { ApprovalRow } from "./approval-row";
+
+export const metadata: Metadata = { title: "Approvals" };
 
 export default async function AdminApprovals() {
   const [pending, unassignedTopics] = await Promise.all([

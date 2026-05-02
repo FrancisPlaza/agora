@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { RankingEditor } from "@/components/ranking-editor";
@@ -29,6 +30,8 @@ function fmtDate(input: string | null): string {
     month: "short",
   });
 }
+
+export const metadata: Metadata = { title: "Vote" };
 
 export default async function Vote({ searchParams }: PageProps) {
   await requireApproved();

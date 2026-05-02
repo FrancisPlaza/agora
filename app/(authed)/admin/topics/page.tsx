@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Badge, type BadgeTone } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Chips } from "@/components/ui/chips";
@@ -5,6 +6,8 @@ import { getAllVoters } from "@/lib/data/admin";
 import { getAllTopics, type TopicState } from "@/lib/data/topics";
 import { derivePollsState, getVotingState } from "@/lib/data/voting";
 import { TopicRowActions } from "./topic-row-actions";
+
+export const metadata: Metadata = { title: "Topics" };
 
 const STATE_TONE: Record<TopicState, BadgeTone> = {
   unassigned: "neutral",

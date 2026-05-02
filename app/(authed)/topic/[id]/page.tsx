@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArtPlaceholder } from "@/components/art-placeholder";
@@ -26,6 +27,20 @@ function fmtDate(input: string | null): string {
     day: "numeric",
     month: "short",
   });
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id: idStr } = await params;
+  const id = Number(idStr);
+  if (!Number.isFinite(id) || id < 1) return { title: "Topic" };
+  // getTopic is React-cache()-wrapped, so the call inside the page
+  // body below dedupes — no extra DB hit.
+  const topic = await getTopic(id);
+  return { title: topic?.philosopher ?? "Topic" };
 }
 
 export default async function TopicDetail({ params, searchParams }: PageProps) {

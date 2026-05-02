@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArtPlaceholder } from "@/components/art-placeholder";
 import { Avatar } from "@/components/ui/avatar";
@@ -9,6 +10,8 @@ import { requireApproved } from "@/lib/auth";
 import { getTopicArtUrl } from "@/lib/data/storage";
 import { getMyTopic } from "@/lib/data/topics";
 import { ProfileForm } from "./profile-form";
+
+export const metadata: Metadata = { title: "Profile" };
 
 function fmtDate(input: string | null): string {
   if (!input) return "";

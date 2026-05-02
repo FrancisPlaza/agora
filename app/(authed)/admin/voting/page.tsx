@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { getAdminSummary } from "@/lib/data/admin";
@@ -9,6 +10,8 @@ import {
   ReopenAndUnlockButton,
   RunTallyButton,
 } from "./voting-controls";
+
+export const metadata: Metadata = { title: "Voting" };
 
 function fmtDateTime(input: string | null): string {
   if (!input) return "—";

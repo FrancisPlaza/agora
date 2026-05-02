@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { PublicCard } from "@/components/public-card";
@@ -8,6 +9,8 @@ import { resendAction } from "./actions";
 interface PageProps {
   searchParams: Promise<{ resent?: string; error?: string }>;
 }
+
+export const metadata: Metadata = { title: "Confirm your email" };
 
 export default async function AwaitingEmail({ searchParams }: PageProps) {
   const params = await searchParams;

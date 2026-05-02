@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,8 @@ const FILTER_LABEL: Record<Filter, string> = {
 interface PageProps {
   searchParams: Promise<{ filter?: string }>;
 }
+
+export const metadata: Metadata = { title: "Dashboard" };
 
 export default async function Dashboard({ searchParams }: PageProps) {
   const params = await searchParams;
@@ -95,6 +98,13 @@ export default async function Dashboard({ searchParams }: PageProps) {
     return [own, ...next];
   })();
 
+  // The banner's "X of N" copy reflects what the voter can rank, not
+  // the full syllabus — unassigned topics aren't votable per the
+  // /vote-page filter.
+  const rankableCount = topics.filter(
+    (t) => t.state !== "unassigned",
+  ).length;
+
   const banner = pickBanner({
     myTopicState: myTopic?.state ?? null,
     myTopicId: myTopic?.id ?? null,
@@ -103,7 +113,7 @@ export default async function Dashboard({ searchParams }: PageProps) {
     polls,
     submitted: !!ballot?.submitted_at || !!ballot?.locked_at,
     rankedCount: ballot?.rankings.length ?? 0,
-    totalTopics: topics.length,
+    totalTopics: rankableCount,
     deadlineAt: votingState?.deadline_at ?? null,
     submittedAt: ballot?.submitted_at ?? null,
     resultsPosted: !!results && results.runs.some((r) => r.winner != null),

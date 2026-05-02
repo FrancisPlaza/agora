@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicCard } from "@/components/public-card";
 import { SignInForm } from "./form";
+
+export const metadata: Metadata = { title: "Sign in" };
 
 interface PageProps {
   searchParams: Promise<{ sent?: string; email?: string; error?: string }>;

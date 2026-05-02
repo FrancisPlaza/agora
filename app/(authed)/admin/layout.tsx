@@ -1,7 +1,18 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { requireAdmin } from "@/lib/auth";
 import { AdminSubNav } from "./admin-subnav";
+
+// Admin subtree uses a three-segment title: "<page> | Admin | Agora".
+// The /admin home page falls through to `default` so the tab reads
+// "Admin | Agora" without "Home".
+export const metadata: Metadata = {
+  title: {
+    default: "Admin | Agora",
+    template: "%s | Admin | Agora",
+  },
+};
 
 export default async function AdminLayout({
   children,

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,8 @@ function fmtDateTime(input: string | null): string {
     minute: "2-digit",
   });
 }
+
+export const metadata: Metadata = { title: "Results" };
 
 export default async function Results({ searchParams }: PageProps) {
   const profile = await requireApproved();

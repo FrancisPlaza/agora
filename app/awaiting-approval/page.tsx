@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { PublicCard } from "@/components/public-card";
 import { signOut } from "@/lib/actions/auth";
 import { getCurrentProfile } from "@/lib/auth";
+
+export const metadata: Metadata = { title: "Awaiting approval" };
 
 export default async function AwaitingApproval() {
   const profile = await getCurrentProfile();

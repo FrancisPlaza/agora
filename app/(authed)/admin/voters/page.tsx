@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge, type BadgeTone } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -10,6 +11,8 @@ import {
 import { derivePollsState, getVotingState } from "@/lib/data/voting";
 import type { Database } from "@/lib/supabase/database.types";
 import { VoterRowActions } from "./voter-row-actions";
+
+export const metadata: Metadata = { title: "Voters" };
 
 type ProfileStatus = Database["public"]["Enums"]["profile_status"];
 type Filter = "all" | ProfileStatus | "admins";

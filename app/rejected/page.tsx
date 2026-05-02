@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
 import { PublicCard } from "@/components/public-card";
 import { signOut } from "@/lib/actions/auth";
+
+export const metadata: Metadata = { title: "Application rejected" };
 
 function beadleLines(): string[] {
   const raw = process.env.NEXT_PUBLIC_BEADLE_CONTACT?.trim();

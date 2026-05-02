@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { UploadForm } from "@/components/upload-form";
 import { requireApproved } from "@/lib/auth";
 import { getTopicArtUrl } from "@/lib/data/storage";
 import { getTopic } from "@/lib/data/topics";
+
+export const metadata: Metadata = { title: "Upload artwork" };
 
 interface PageProps {
   params: Promise<{ id: string }>;

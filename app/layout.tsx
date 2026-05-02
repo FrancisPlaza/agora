@@ -15,7 +15,10 @@ const sourceSerif4 = Source_Serif_4({
 });
 
 export const metadata: Metadata = {
-  title: "Agora",
+  title: {
+    default: "Agora",
+    template: "%s | Agora",
+  },
   description: "Ranked-choice voting and class gallery for JDN101 Philosophy of Law",
 };
 
