@@ -293,11 +293,13 @@ describe("deleteVoter — happy paths", () => {
     const audit = auditCall?.payload as {
       actor_id: string;
       action: string;
+      target_type: string;
       target_id: string;
       meta: Record<string, unknown>;
     };
     expect(audit.actor_id).toBe(ADMIN_ID);
     expect(audit.action).toBe("voter_deleted");
+    expect(audit.target_type).toBe("voter");
     expect(audit.target_id).toBe(TARGET_ID);
     expect(audit.meta).toMatchObject({
       email: "voter@example.com",

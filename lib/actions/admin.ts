@@ -250,7 +250,7 @@ export async function deleteVoter(
   await supabaseAdmin.from("audit_log").insert({
     actor_id: caller.id,
     action: "voter_deleted",
-    target_type: "profile",
+    target_type: "voter",
     target_id: target.id,
     meta: {
       email: target.email,

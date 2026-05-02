@@ -19,6 +19,7 @@ const ACTION_VERBS: Record<string, string> = {
   approve_voter: "approved",
   approve_non_voter: "approved as non-voting admin",
   reject_voter: "rejected",
+  voter_deleted: "deleted",
   assign_topic: "assigned",
   reassign_topic: "reassigned",
   mark_presented: "marked presented",
@@ -35,10 +36,12 @@ function describeAuditTarget(entry: AuditLogEntry): string {
   if (entry.target_type === "topic" && entry.target_id) {
     return `topic ${String(entry.target_id).padStart(2, "0")}`;
   }
-  if (entry.target_type === "voter") {
+  if (entry.target_type === "voter" || entry.target_type === "profile") {
     // We don't have the target's display name here without an extra
     // join — Phase 6 keeps this lean. Show the truncated id; the meta
-    // payload often carries enough context (topic_id, reason).
+    // payload often carries enough context (topic_id, reason). The
+    // "profile" case covers an early voter_deleted row that used the
+    // word "profile" before the action was aligned to "voter".
     return entry.target_id ? entry.target_id.slice(0, 8) : "";
   }
   return entry.target_id ?? "";
