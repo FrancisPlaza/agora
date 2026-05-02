@@ -107,6 +107,177 @@ export async function rejectVoter(
   return {};
 }
 
+// ── deleteVoter ──────────────────────────────────────────────────────
+// Pragmatic implementation — no SQL function, no row locks. The race
+// window between validation and deletion is microseconds and the
+// consequence (a concurrent ballot submission cascaded with the user)
+// is recoverable via re-registration.
+//
+// Cascade chain on auth.admin.deleteUser:
+//   auth.users → profiles (cascade)
+//   profiles   → ballots, notes (cascade)
+//   ballots    → rankings (cascade)
+//   profiles   → topics.presenter_voter_id (set null per 0001)
+//
+// FKs that previously blocked profile deletion (audit_log.actor_id,
+// profiles.approved_by/rejected_by, voting_state.polls_locked_by)
+// were relaxed to ON DELETE SET NULL in migration 0026.
+
+export type DeleteVoterError =
+  | "NOT_AUTHORISED"
+  | "NOT_FOUND"
+  | "ALREADY_PRESENTED"
+  | "BALLOT_SUBMITTED"
+  | "DELETE_FAILED";
+
+export type DeleteVoterResult =
+  | { ok: true }
+  | { ok: false; error: DeleteVoterError };
+
+interface VoterRow {
+  id: string;
+  email: string;
+  full_name: string;
+  student_id: string;
+  is_admin: boolean;
+}
+
+interface AssignedTopicRow {
+  id: number;
+  presented_at: string | null;
+  art_image_path: string | null;
+}
+
+interface BallotRow {
+  submitted_at: string | null;
+}
+
+export async function deleteVoter(
+  targetProfileId: string,
+): Promise<DeleteVoterResult> {
+  if (!targetProfileId) return { ok: false, error: "NOT_FOUND" };
+
+  // 1. Auth check — caller must be an approved admin.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "NOT_AUTHORISED" };
+
+  const { data: caller } = await supabase
+    .from("profiles")
+    .select("id, is_admin, status")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (!caller || caller.status !== "approved" || !caller.is_admin) {
+    return { ok: false, error: "NOT_AUTHORISED" };
+  }
+
+  // 2. Load target + assigned topic + ballot in one shot. Embedded
+  //    selects produce arrays in @supabase/ssr; unwrap to the single
+  //    row each FK actually permits.
+  const { data: targetRaw } = await supabase
+    .from("profiles")
+    .select(
+      `id, email, full_name, student_id, is_admin,
+       topics:topics!presenter_voter_id (id, presented_at, art_image_path),
+       ballots:ballots!voter_id (submitted_at)`,
+    )
+    .eq("id", targetProfileId)
+    .maybeSingle();
+
+  if (!targetRaw) return { ok: false, error: "NOT_FOUND" };
+
+  const target: VoterRow = {
+    id: targetRaw.id,
+    email: targetRaw.email,
+    full_name: targetRaw.full_name,
+    student_id: targetRaw.student_id,
+    is_admin: targetRaw.is_admin,
+  };
+  const targetTopic: AssignedTopicRow | null = unwrapEmbed(targetRaw.topics);
+  const targetBallot: BallotRow | null = unwrapEmbed(targetRaw.ballots);
+
+  // 3. Validate. Disabled-button gate prevents these in normal flow;
+  //    the action is the backstop for race conditions.
+  if (targetTopic?.presented_at) {
+    return { ok: false, error: "ALREADY_PRESENTED" };
+  }
+  if (targetBallot?.submitted_at) {
+    return { ok: false, error: "BALLOT_SUBMITTED" };
+  }
+
+  const supabaseAdmin = createServiceClient();
+
+  // 4. Storage cleanup. List + remove every object under the topic's
+  //    prefix. Tolerant of an empty bucket prefix (no-op).
+  if (targetTopic) {
+    const prefix = `${targetTopic.id}/`;
+    const { data: existing } = await supabaseAdmin.storage
+      .from("presentations")
+      .list(prefix);
+    if (existing && existing.length > 0) {
+      const paths = existing.map((o) => `${prefix}${o.name}`);
+      // Best-effort: storage failure is logged but doesn't block the
+      // delete. The orphaned objects are recoverable manually if it
+      // ever matters for a class tool of 32 students.
+      const { error: removeError } = await supabaseAdmin.storage
+        .from("presentations")
+        .remove(paths);
+      if (removeError) {
+        console.error(
+          `[deleteVoter] storage cleanup failed for ${prefix}: ${removeError.message}`,
+        );
+      }
+    }
+  }
+
+  // 5. Audit log insert BEFORE the auth.admin.deleteUser call. Captures
+  //    the deleted user's identity so the row is meaningful even after
+  //    the profile is gone. actor_id remains valid (the caller isn't
+  //    being deleted); the FK's new ON DELETE SET NULL only matters if
+  //    the caller is later deleted themselves.
+  await supabaseAdmin.from("audit_log").insert({
+    actor_id: caller.id,
+    action: "voter_deleted",
+    target_type: "profile",
+    target_id: target.id,
+    meta: {
+      email: target.email,
+      full_name: target.full_name,
+      student_id: target.student_id,
+      was_admin: target.is_admin,
+      was_assigned_topic_id: targetTopic?.id ?? null,
+    },
+  });
+
+  // 6. Delete the auth user. Cascade handles profiles → ballots →
+  //    rankings → notes. topics.presenter_voter_id sets null.
+  const { error: deleteError } =
+    await supabaseAdmin.auth.admin.deleteUser(target.id);
+  if (deleteError) {
+    console.error(
+      `[deleteVoter] auth.admin.deleteUser failed for ${target.id}: ${deleteError.message}`,
+    );
+    return { ok: false, error: "DELETE_FAILED" };
+  }
+
+  // 7. Revalidate.
+  revalidateAdmin();
+  return { ok: true };
+}
+
+/**
+ * Supabase's @supabase/ssr returns embedded relations as arrays even
+ * for one-to-one FKs. Unwrap to the single row (or null).
+ */
+function unwrapEmbed<T>(value: T | T[] | null | undefined): T | null {
+  if (value == null) return null;
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value;
+}
+
 // ── assignTopic ──────────────────────────────────────────────────────
 // Storage cleanup is the action's job, not the Postgres function's.
 // The function clears row state in one transaction; this orchestrates

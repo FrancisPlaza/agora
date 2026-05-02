@@ -4,7 +4,12 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Select } from "@/components/ui/select";
-import { assignTopic, unlockBallot } from "@/lib/actions/admin";
+import {
+  assignTopic,
+  deleteVoter,
+  unlockBallot,
+  type DeleteVoterError,
+} from "@/lib/actions/admin";
 import type { BallotStatus, UnassignedTopic } from "@/lib/data/admin";
 
 interface Props {
@@ -14,6 +19,9 @@ interface Props {
   hasArt: boolean;
   currentTopicId: number | null;
   currentTopicPresented: boolean;
+  /** Used in the delete-confirmation modal to name the freed topic. */
+  currentTopicPhilosopher: string | null;
+  currentTopicTheme: string | null;
   /**
    * True when polls are locked, deadline has passed, or a tally is
    * cached. Gates BOTH reassign and per-voter unlock-ballot:
@@ -27,6 +35,15 @@ interface Props {
   reassignableTopics: UnassignedTopic[];
 }
 
+const DELETE_ERROR_COPY: Record<DeleteVoterError, string> = {
+  NOT_AUTHORISED: "You aren't authorised to delete voters.",
+  NOT_FOUND: "Voter no longer exists.",
+  ALREADY_PRESENTED: "Cannot delete — they've already presented.",
+  BALLOT_SUBMITTED: "Cannot delete — ballot already submitted.",
+  DELETE_FAILED:
+    "Delete partly succeeded — some cleanup failed. Check the audit log.",
+};
+
 export function VoterRowActions({
   voterId,
   voterName,
@@ -34,11 +51,14 @@ export function VoterRowActions({
   hasArt,
   currentTopicId,
   currentTopicPresented,
+  currentTopicPhilosopher,
+  currentTopicTheme,
   pollsLocked,
   reassignableTopics,
 }: Props) {
   const [reassignOpen, setReassignOpen] = useState(false);
   const [unlockOpen, setUnlockOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [reassignTopicId, setReassignTopicId] = useState("");
 
   // Filter the voter's own current topic out of the dropdown so the
@@ -61,6 +81,15 @@ export function VoterRowActions({
   // (0021) and STUDENT_ALREADY_PRESENTED (0020) are the direct-RPC
   // backstops.
   const hideReassign = currentTopicPresented || pollsLocked;
+
+  // Delete eligibility — voters who have already presented or
+  // submitted a ballot are permanent class artefacts. The action's
+  // server-side gate is the backstop for races.
+  const deleteBlockReason: string | null = currentTopicPresented
+    ? "Cannot delete — already presented"
+    : ballot_status === "submitted"
+      ? "Cannot delete — ballot submitted"
+      : null;
 
   return (
     <div className="flex justify-end gap-2 flex-wrap items-center">
@@ -85,6 +114,15 @@ export function VoterRowActions({
           Unlock ballot
         </Button>
       ) : null}
+      <Button
+        kind="danger"
+        size="sm"
+        onClick={() => setDeleteOpen(true)}
+        disabled={!!deleteBlockReason}
+        title={deleteBlockReason ?? undefined}
+      >
+        Delete
+      </Button>
 
       <ConfirmDialog
         open={reassignOpen}
@@ -135,6 +173,47 @@ export function VoterRowActions({
           const fd = new FormData();
           fd.set("targetVoterId", voterId);
           return unlockBallot(fd);
+        }}
+      />
+
+      <ConfirmDialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        title={`Delete ${voterName}?`}
+        description={
+          <>
+            <p className="m-0 mb-2">This will:</p>
+            <ul className="m-0 mb-2 pl-5 list-disc text-[13px]">
+              <li>
+                {currentTopicId &&
+                currentTopicPhilosopher &&
+                currentTopicTheme ? (
+                  <>
+                    return their assigned topic ({currentTopicPhilosopher} —{" "}
+                    {currentTopicTheme}) to the unassigned pool
+                  </>
+                ) : (
+                  <>release no topic — they didn&rsquo;t have one assigned</>
+                )}
+              </li>
+              <li>
+                delete their draft ballot and any private or class-shared notes
+              </li>
+              <li>remove them from the voter roster</li>
+            </ul>
+            <p className="m-0">
+              This cannot be undone. The student will need to register again to
+              rejoin.
+            </p>
+          </>
+        }
+        confirmLabel="Delete voter"
+        confirmKind="solid-danger"
+        onConfirm={async () => {
+          const result = await deleteVoter(voterId);
+          if (!result.ok) {
+            return { error: DELETE_ERROR_COPY[result.error] };
+          }
         }}
       />
     </div>
