@@ -66,11 +66,21 @@ export async function middleware(request: NextRequest) {
   }
 
   // Authenticated. Look up status + admin flag to gate.
-  const { data: profile } = await supabase
+  const { data: profile, error: profileErr } = await supabase
     .from("profiles")
     .select("status, is_admin")
     .eq("id", user.id)
     .maybeSingle();
+
+  // Surface DB-side failures (RLS, missing grants, dropped FK) instead
+  // of silently treating them as a missing profile. The fallback to
+  // pending_email below stays as a defensive default, but Vercel logs
+  // will now show why a real user is being bounced.
+  if (profileErr) {
+    console.error(
+      `[middleware] profile fetch failed for ${user.id}: ${profileErr.message} (code: ${profileErr.code})`,
+    );
+  }
 
   const status = profile?.status ?? "pending_email";
   const isAdmin = profile?.is_admin ?? false;

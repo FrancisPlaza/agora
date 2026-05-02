@@ -37,11 +37,21 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileErr } = await supabase
     .from("profiles")
     .select("status")
     .eq("id", user.id)
     .maybeSingle();
+
+  // Surface DB-side failures (RLS, missing grants, dropped FK) instead
+  // of silently treating them as a missing profile. The fallback to
+  // pending_email below stays as a defensive default, but Vercel logs
+  // will now show why a real user is being bounced.
+  if (profileErr) {
+    console.error(
+      `[auth/callback] profile fetch failed for ${user.id}: ${profileErr.message} (code: ${profileErr.code})`,
+    );
+  }
 
   const dest = STATUS_REDIRECT[profile?.status ?? "pending_email"] ?? "/";
   return NextResponse.redirect(new URL(dest, request.url));
