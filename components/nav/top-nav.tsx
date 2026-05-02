@@ -5,24 +5,27 @@ import { usePathname } from "next/navigation";
 import { AgoraWordmark } from "@/components/ui/agora-wordmark";
 import { Avatar } from "@/components/ui/avatar";
 
-const VOTER_LINKS = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/vote", label: "Vote" },
-  { href: "/profile", label: "Profile" },
-] as const;
-
-const ADMIN_LINK = { href: "/admin", label: "Admin" } as const;
-
 interface TopNavProps {
   fullName: string;
   isAdmin?: boolean;
+  hasTopic?: boolean;
+  tallyDone?: boolean;
 }
 
-export function TopNav({ fullName, isAdmin }: TopNavProps) {
+export function TopNav({
+  fullName,
+  isAdmin,
+  hasTopic,
+  tallyDone,
+}: TopNavProps) {
   const pathname = usePathname();
-  const links = isAdmin
-    ? [...VOTER_LINKS, ADMIN_LINK]
-    : [...VOTER_LINKS];
+  const links: Array<{ href: string; label: string }> = [
+    { href: "/dashboard", label: "Dashboard" },
+    ...(hasTopic ? [{ href: "/vote", label: "Vote" }] : []),
+    ...(tallyDone ? [{ href: "/results", label: "Results" }] : []),
+    { href: "/profile", label: "Profile" },
+    ...(isAdmin ? [{ href: "/admin", label: "Admin" }] : []),
+  ];
   return (
     <nav className="hidden md:flex items-center gap-6 px-6 h-14 bg-white border-b border-line print:hidden">
       <Link href="/dashboard" className="shrink-0">

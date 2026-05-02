@@ -4,25 +4,23 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon, type IconName } from "@/components/ui/icon";
 
-const VOTER_LINKS: Array<{ href: string; label: string; icon: IconName }> = [
-  { href: "/dashboard", label: "Dashboard", icon: "home" },
-  { href: "/vote", label: "Vote", icon: "vote" },
-  { href: "/profile", label: "Profile", icon: "user" },
-];
-
-const ADMIN_LINK: { href: string; label: string; icon: IconName } = {
-  href: "/admin",
-  label: "Admin",
-  icon: "shield",
-};
-
 interface BottomNavProps {
   isAdmin?: boolean;
+  hasTopic?: boolean;
+  tallyDone?: boolean;
 }
 
-export function BottomNav({ isAdmin }: BottomNavProps) {
+export function BottomNav({ isAdmin, hasTopic, tallyDone }: BottomNavProps) {
   const pathname = usePathname();
-  const links = isAdmin ? [...VOTER_LINKS, ADMIN_LINK] : [...VOTER_LINKS];
+  const links: Array<{ href: string; label: string; icon: IconName }> = [
+    { href: "/dashboard", label: "Dashboard", icon: "home" },
+    ...(hasTopic ? [{ href: "/vote", label: "Vote", icon: "vote" as const }] : []),
+    ...(tallyDone
+      ? [{ href: "/results", label: "Results", icon: "trophy" as const }]
+      : []),
+    { href: "/profile", label: "Profile", icon: "user" },
+    ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: "shield" as const }] : []),
+  ];
   return (
     <nav className="md:hidden sticky bottom-0 bg-white border-t border-line flex px-2 pt-1.5 pb-2.5 z-30 print:hidden">
       {links.map((l) => {
