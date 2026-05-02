@@ -162,8 +162,8 @@ export default async function Vote({ searchParams }: PageProps) {
             tone="violet"
             title={
               votingState?.polls_open_at
-                ? `Voting opens ${fmtDateTime(votingState.polls_open_at)}`
-                : "Voting opens later in the term"
+                ? `Voting opens on ${fmtDate(votingState.polls_open_at)}`
+                : "Voting opens on 5 May"
             }
             sub="Take notes meanwhile — the dashboard fills in as students present."
           />
