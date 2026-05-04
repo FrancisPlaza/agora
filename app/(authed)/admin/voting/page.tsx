@@ -15,11 +15,15 @@ export const metadata: Metadata = { title: "Voting" };
 
 function fmtDateTime(input: string | null): string {
   if (!input) return "—";
+  // Render in Manila local time. This page is server-rendered on
+  // Vercel (UTC), so without an explicit timeZone the displayed
+  // hour drifts off by the user's offset.
   return new Date(input).toLocaleString("en-GB", {
     day: "numeric",
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "Asia/Manila",
   });
 }
 
