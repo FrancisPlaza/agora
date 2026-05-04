@@ -20,6 +20,7 @@ function fmtDateTime(input: string | null): string {
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "Asia/Manila",
   });
 }
 
@@ -28,6 +29,7 @@ function fmtDate(input: string | null): string {
   return new Date(input).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
+    timeZone: "Asia/Manila",
   });
 }
 

@@ -28,6 +28,7 @@ function fmtDateTime(input: string | null): string {
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "Asia/Manila",
   });
 }
 

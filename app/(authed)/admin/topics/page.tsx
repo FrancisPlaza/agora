@@ -55,6 +55,7 @@ function fmtDate(input: string | null): string {
   return new Date(input).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
+    timeZone: "Asia/Manila",
   });
 }
 
