@@ -68,28 +68,26 @@ export function ArtPlaceholder({
           fill="none"
         />
       </svg>
+      <div className="relative z-[1]">
+        <div
+          className="font-mono text-[11px] tabular-nums tracking-[0.04em]"
+          style={{ color: t.ink, opacity: 0.6 }}
+        >
+          Nº {String(orderNum).padStart(2, "0")}
+        </div>
+      </div>
       {showLabel ? (
-        <>
-          <div className="relative z-[1]">
-            <div
-              className="font-mono text-[11px] tabular-nums tracking-[0.04em]"
-              style={{ color: t.ink, opacity: 0.6 }}
-            >
-              Nº {String(orderNum).padStart(2, "0")}
-            </div>
+        <div className="relative z-[1]">
+          <div className="font-serif text-[22px] font-semibold leading-[1.15] tracking-tight">
+            {philosopher}
           </div>
-          <div className="relative z-[1]">
-            <div className="font-serif text-[22px] font-semibold leading-[1.15] tracking-tight">
-              {philosopher}
-            </div>
-            <div
-              className="font-serif italic text-[13px] mt-1"
-              style={{ color: t.ink, opacity: 0.7 }}
-            >
-              {artTitle ?? theme}
-            </div>
+          <div
+            className="font-serif italic text-[13px] mt-1"
+            style={{ color: t.ink, opacity: 0.7 }}
+          >
+            {artTitle ?? theme}
           </div>
-        </>
+        </div>
       ) : null}
     </div>
   );
