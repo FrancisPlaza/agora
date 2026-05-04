@@ -188,22 +188,21 @@ export default async function AdminVoters({ searchParams }: PageProps) {
                       )}
                     </td>
                     <td className="px-3 py-3 align-middle">
-                      {v.status === "approved" ? (
-                        <VoterRowActions
-                          voterId={v.id}
-                          voterName={v.full_name}
-                          currentUserId={me.id}
-                          ballot_status={v.ballot_status}
-                          hasArt={false /* admin voter list doesn't carry art state — handled in /admin/topics */}
-                          isNonVotingAdmin={v.is_admin && !v.assigned_topic}
-                          currentTopicId={v.assigned_topic?.id ?? null}
-                          currentTopicPresented={!!v.assigned_topic?.presented_at}
-                          currentTopicPhilosopher={v.assigned_topic?.philosopher ?? null}
-                          currentTopicTheme={v.assigned_topic?.theme ?? null}
-                          pollsLocked={pollsLocked}
-                          reassignableTopics={reassignableTopics}
-                        />
-                      ) : null}
+                      <VoterRowActions
+                        voterId={v.id}
+                        voterName={v.full_name}
+                        currentUserId={me.id}
+                        voterStatus={v.status}
+                        ballot_status={v.ballot_status}
+                        hasArt={false /* admin voter list doesn't carry art state — handled in /admin/topics */}
+                        isNonVotingAdmin={v.is_admin && !v.assigned_topic}
+                        currentTopicId={v.assigned_topic?.id ?? null}
+                        currentTopicPresented={!!v.assigned_topic?.presented_at}
+                        currentTopicPhilosopher={v.assigned_topic?.philosopher ?? null}
+                        currentTopicTheme={v.assigned_topic?.theme ?? null}
+                        pollsLocked={pollsLocked}
+                        reassignableTopics={reassignableTopics}
+                      />
                     </td>
                   </tr>
                 ))

@@ -11,12 +11,22 @@ import {
   type DeleteVoterError,
 } from "@/lib/actions/admin";
 import type { BallotStatus, UnassignedTopic } from "@/lib/data/admin";
+import type { Database } from "@/lib/supabase/database.types";
+
+type ProfileStatus = Database["public"]["Enums"]["profile_status"];
 
 interface Props {
   voterId: string;
   voterName: string;
   /** The signed-in admin's profile id — used to disable Delete on the caller's own row. */
   currentUserId: string;
+  /**
+   * Voter row's profile status. Reassign and Unlock-ballot only apply
+   * to approved voters; Delete is the lone action available for
+   * pending / rejected rows so a beadle can clear orphaned accounts
+   * (e.g. a typo'd email that can't confirm).
+   */
+  voterStatus: ProfileStatus;
   /**
    * True when this row is a non-voting admin (is_admin = true, no
    * assigned topic — e.g. the professor). Hides the Reassign button:
@@ -58,6 +68,7 @@ export function VoterRowActions({
   voterId,
   voterName,
   currentUserId,
+  voterStatus,
   isNonVotingAdmin,
   ballot_status,
   hasArt,
@@ -92,9 +103,14 @@ export function VoterRowActions({
   // unactionable for any reason. Function-level POLLS_LOCKED gate
   // (0021) and STUDENT_ALREADY_PRESENTED (0020) are the direct-RPC
   // backstops. Non-voting admins are also hidden — they aren't
-  // presenters, so a topic assignment is conceptually wrong.
+  // presenters, so a topic assignment is conceptually wrong. Non-
+  // approved voters (pending / rejected) are hidden too — they have
+  // no topic and approve_voter is the right path to give them one.
   const hideReassign =
-    currentTopicPresented || pollsLocked || isNonVotingAdmin;
+    currentTopicPresented ||
+    pollsLocked ||
+    isNonVotingAdmin ||
+    voterStatus !== "approved";
 
   // Delete eligibility — voters who have already presented or
   // submitted a ballot are permanent class artefacts, and admins can't
