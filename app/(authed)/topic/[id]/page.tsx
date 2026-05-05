@@ -111,8 +111,6 @@ export default async function TopicDetail({ params, searchParams }: PageProps) {
             <img
               src={artUrl}
               alt={topic.art_title ?? topic.theme}
-              fetchPriority="high"
-              decoding="async"
               className="w-full h-full object-cover"
             />
           </div>
