@@ -22,10 +22,9 @@ export default async function UploadPage({ params }: PageProps) {
   if (!topic) notFound();
 
   // Gate: only the assigned presenter, and only when the topic has a
-  // presenter at all. Phase 7.6 widens this — assigned (pre-presented),
-  // presented, and published are all valid upload destinations. The
-  // storage RLS allows the write; the read policy hides the file from
-  // non-presenters until presented_at is set.
+  // presenter at all. Per the May 2026 visibility change, art is
+  // shared with the gallery as soon as it's uploaded — the oral
+  // presentation is no longer the visibility gate.
   if (topic.presenter_voter_id !== profile.id) {
     redirect("/dashboard");
   }
@@ -35,31 +34,15 @@ export default async function UploadPage({ params }: PageProps) {
 
   const hasUploaded = !!topic.art_uploaded_at;
   const isEdit = hasUploaded;
-  const isPresented = !!topic.presented_at;
   const existingPreviewUrl = hasUploaded
     ? await getTopicArtUrl(topic.art_image_path, { w: 600, h: 450 })
     : null;
 
-  // Three header variants:
-  //  • assigned + uploaded   → "Edit … visible once your beadle marks you presented."
-  //  • presented + uploaded  → "Edit your presentation"
-  //  • assigned (no upload yet) or presented (no upload yet) → "Upload your presentation"
   const headerTitle = hasUploaded
-    ? isPresented
-      ? "Edit your presentation"
-      : "Edit your presentation"
+    ? "Edit your presentation"
     : "Upload your presentation";
-  const headerSub =
-    hasUploaded && !isPresented
-      ? "Visible to the class once your beadle marks you presented."
-      : null;
 
-  // Submit-button copy mirrors the same three states.
-  const submitLabel = hasUploaded
-    ? "Update"
-    : isPresented
-      ? "Save and publish"
-      : "Save (visible after beadle marks presented)";
+  const submitLabel = hasUploaded ? "Update" : "Save and publish";
 
   return (
     <div className="max-w-[1100px] mx-auto px-4 md:px-8 py-4 md:py-6 pb-10">
@@ -78,9 +61,6 @@ export default async function UploadPage({ params }: PageProps) {
           Topic Nº {String(topic.order_num).padStart(2, "0")} ·{" "}
           <b className="text-text">{topic.philosopher}</b> · {topic.theme}
         </div>
-        {headerSub ? (
-          <div className="text-text-2 mt-1.5 text-sm italic">{headerSub}</div>
-        ) : null}
       </div>
 
       <UploadForm
