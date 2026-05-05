@@ -67,7 +67,11 @@ export default async function TopicDetail({ params, searchParams }: PageProps) {
     // art_image_path = null on pre-presented topics; the presenter
     // sees their own. Render whatever the mask hands us.
     topic.art_image_path
-      ? getTopicArtUrl(topic.art_image_path, { w: 1200, h: 700 })
+      ? getTopicArtUrl(topic.art_image_path, {
+          w: 1200,
+          h: 700,
+          version: topic.art_uploaded_at,
+        })
       : Promise.resolve(null),
     getMyBallot(),
   ]);
@@ -111,6 +115,8 @@ export default async function TopicDetail({ params, searchParams }: PageProps) {
             <img
               src={artUrl}
               alt={topic.art_title ?? topic.theme}
+              fetchPriority="high"
+              decoding="async"
               className="w-full h-full object-cover"
             />
           </div>

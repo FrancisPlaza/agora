@@ -64,7 +64,11 @@ export async function TopicCard({ topic, isMine, medal }: TopicCardProps) {
   // voters see art_image_path = null on pre-presented topics; the
   // presenter sees their own. Render whatever the mask hands us.
   const artUrl = topic.art_image_path
-    ? await getTopicArtUrl(topic.art_image_path, { w: 400, h: 300 })
+    ? await getTopicArtUrl(topic.art_image_path, {
+        w: 400,
+        h: 300,
+        version: topic.art_uploaded_at,
+      })
     : null;
 
   const statusPill = STATUS_PILL[topic.state];
@@ -98,6 +102,8 @@ export async function TopicCard({ topic, isMine, medal }: TopicCardProps) {
             <img
               src={artUrl}
               alt={topic.art_title ?? topic.theme}
+              loading="lazy"
+              decoding="async"
               className="absolute inset-0 w-full h-full object-cover"
             />
             <div

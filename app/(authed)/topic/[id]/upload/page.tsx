@@ -35,7 +35,11 @@ export default async function UploadPage({ params }: PageProps) {
   const hasUploaded = !!topic.art_uploaded_at;
   const isEdit = hasUploaded;
   const existingPreviewUrl = hasUploaded
-    ? await getTopicArtUrl(topic.art_image_path, { w: 600, h: 450 })
+    ? await getTopicArtUrl(topic.art_image_path, {
+        w: 600,
+        h: 450,
+        version: topic.art_uploaded_at,
+      })
     : null;
 
   const headerTitle = hasUploaded

@@ -27,7 +27,11 @@ export default async function Profile() {
   const myTopic = await getMyTopic();
   const myTopicArtUrl =
     myTopic?.state === "published" && myTopic.art_image_path
-      ? await getTopicArtUrl(myTopic.art_image_path, { w: 88, h: 88 })
+      ? await getTopicArtUrl(myTopic.art_image_path, {
+          w: 88,
+          h: 88,
+          version: myTopic.art_uploaded_at,
+        })
       : null;
 
   return (
@@ -66,6 +70,8 @@ export default async function Profile() {
                 <img
                   src={myTopicArtUrl}
                   alt=""
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover"
                 />
               ) : (

@@ -20,7 +20,11 @@ export async function RankingThumbnail({
   const px = size * 2; // retina request
   const artUrl =
     topic.state === "published" && topic.art_image_path
-      ? await getTopicArtUrl(topic.art_image_path, { w: px, h: px })
+      ? await getTopicArtUrl(topic.art_image_path, {
+          w: px,
+          h: px,
+          version: topic.art_uploaded_at,
+        })
       : null;
 
   return (
@@ -33,6 +37,8 @@ export async function RankingThumbnail({
         <img
           src={artUrl}
           alt=""
+          loading="lazy"
+          decoding="async"
           className="w-full h-full object-cover"
         />
       ) : (

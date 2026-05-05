@@ -17,7 +17,11 @@ export async function Podium({ runs }: PodiumProps) {
       }
       const artUrl =
         run.winner.state === "published" && run.winner.art_image_path
-          ? await getTopicArtUrl(run.winner.art_image_path, { w: 400, h: 400 })
+          ? await getTopicArtUrl(run.winner.art_image_path, {
+              w: 400,
+              h: 400,
+              version: run.winner.art_uploaded_at,
+            })
           : null;
       return { run, artUrl };
     }),
@@ -40,6 +44,8 @@ export async function Podium({ runs }: PodiumProps) {
               <img
                 src={artUrl}
                 alt={run.winner.art_title ?? run.winner.theme}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover"
               />
             ) : (
