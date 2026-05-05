@@ -98,6 +98,8 @@ export async function TopicCard({ topic, isMine, medal }: TopicCardProps) {
             <img
               src={artUrl}
               alt={topic.art_title ?? topic.theme}
+              loading="lazy"
+              decoding="async"
               className="absolute inset-0 w-full h-full object-cover"
             />
             <div

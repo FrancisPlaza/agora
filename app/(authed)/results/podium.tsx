@@ -40,6 +40,8 @@ export async function Podium({ runs }: PodiumProps) {
               <img
                 src={artUrl}
                 alt={run.winner.art_title ?? run.winner.theme}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover"
               />
             ) : (
