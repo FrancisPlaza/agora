@@ -12,46 +12,33 @@ export interface TopicView extends TopicRow {
   class_note_count: number;
 }
 
+/**
+ * Topic lifecycle state derived from the row's identity columns.
+ *
+ * Per the May 2026 policy change, art is shared with the gallery as
+ * soon as the presenter uploads — the oral presentation no longer
+ * gates visibility. So `published` fires on `art_uploaded_at` alone,
+ * regardless of `presented_at`. `presented` is now narrow: oral done
+ * but no art yet (uncommon, since the upload usually precedes the
+ * talk). The dashboard's filter chips and per-card status badges
+ * track this naming.
+ */
 function deriveState(t: TopicRow): TopicState {
   if (!t.presenter_voter_id) return "unassigned";
-  if (!t.presented_at) return "assigned";
-  if (!t.art_uploaded_at) return "presented";
-  return "published";
+  if (t.art_uploaded_at) return "published";
+  if (t.presented_at) return "presented";
+  return "assigned";
 }
 
 interface TopicWithPresenter extends TopicRow {
   presenter: { id: string; full_name: string } | null;
 }
 
-/**
- * Phase 7.6: presenters can upload art before the beadle marks them
- * presented. Until presented_at is set, the art fields are private to
- * the presenter. Non-presenter viewers see the topic in `assigned` state
- * with no art metadata — the same view they'd have had pre-upload.
- *
- * The storage read policy in 0017 already 401s direct file fetches; this
- * mask handles the row-level data the page renders alongside.
- */
-function maskArtForViewer(
-  topic: TopicWithPresenter,
-  viewerId: string | null,
-): TopicWithPresenter {
-  if (topic.presented_at) return topic;
-  if (viewerId && topic.presenter_voter_id === viewerId) return topic;
-  return {
-    ...topic,
-    art_title: null,
-    art_explanation: null,
-    art_image_path: null,
-    art_uploaded_at: null,
-  };
-}
-
 /** Fetch every topic, presenter info embedded, with class-note counts merged in. */
 export const getAllTopics = cache(async (): Promise<TopicView[]> => {
   const supabase = await createClient();
 
-  const [topicsResult, countsResult, userResult] = await Promise.all([
+  const [topicsResult, countsResult] = await Promise.all([
     supabase
       .from("topics")
       .select("*, presenter:profiles!presenter_voter_id(id, full_name)")
@@ -60,7 +47,6 @@ export const getAllTopics = cache(async (): Promise<TopicView[]> => {
       .from("notes")
       .select("topic_id")
       .eq("visibility", "class"),
-    supabase.auth.getUser(),
   ]);
 
   if (topicsResult.error || !topicsResult.data) return [];
@@ -70,24 +56,19 @@ export const getAllTopics = cache(async (): Promise<TopicView[]> => {
     counts.set(row.topic_id, (counts.get(row.topic_id) ?? 0) + 1);
   }
 
-  const viewerId = userResult.data.user?.id ?? null;
-
-  return (topicsResult.data as TopicWithPresenter[]).map((raw) => {
-    const t = maskArtForViewer(raw, viewerId);
-    return {
-      ...t,
-      state: deriveState(t),
-      presenter: t.presenter,
-      class_note_count: counts.get(t.id) ?? 0,
-    };
-  });
+  return (topicsResult.data as TopicWithPresenter[]).map((t) => ({
+    ...t,
+    state: deriveState(t),
+    presenter: t.presenter,
+    class_note_count: counts.get(t.id) ?? 0,
+  }));
 });
 
 /** Fetch a single topic by id, or `null` if not found / not visible. */
 export const getTopic = cache(async (id: number): Promise<TopicView | null> => {
   const supabase = await createClient();
 
-  const [topicResult, countResult, userResult] = await Promise.all([
+  const [topicResult, countResult] = await Promise.all([
     supabase
       .from("topics")
       .select("*, presenter:profiles!presenter_voter_id(id, full_name)")
@@ -98,16 +79,11 @@ export const getTopic = cache(async (id: number): Promise<TopicView | null> => {
       .select("id", { count: "exact", head: true })
       .eq("topic_id", id)
       .eq("visibility", "class"),
-    supabase.auth.getUser(),
   ]);
 
   if (topicResult.error || !topicResult.data) return null;
 
-  const viewerId = userResult.data.user?.id ?? null;
-  const t = maskArtForViewer(
-    topicResult.data as TopicWithPresenter,
-    viewerId,
-  );
+  const t = topicResult.data as TopicWithPresenter;
   return {
     ...t,
     state: deriveState(t),
