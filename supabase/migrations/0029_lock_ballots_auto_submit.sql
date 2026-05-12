@@ -1,4 +1,10 @@
--- 0028_lock_ballots_auto_submit.sql
+-- 0029_lock_ballots_auto_submit.sql
+-- (Originally drafted as 0028 but bumped to 0029 because slot 0028
+-- was burnt by an earlier-reverted presentations_bucket_public
+-- migration that did apply to prod before the revert. The CLI keys
+-- migrations by their numeric prefix in schema_migrations, so a
+-- same-numbered new file was silently skipped on the next push.)
+--
 -- Policy change: when polls lock, non-empty drafts are promoted to
 -- submitted ballots so they count in the tally. Previously a forgotten
 -- draft simply got force-locked (locked_at set, submitted_at null) and
@@ -70,7 +76,7 @@ begin
       'auto_submitted', v_auto_submitted,
       'force_locked_empty', v_force_locked,
       -- Kept for backward compat with any tooling that reads the
-      -- pre-0028 shape. Equals auto_submitted + force_locked_empty.
+      -- pre-0029 shape. Equals auto_submitted + force_locked_empty.
       'ballots_locked', v_auto_submitted + v_force_locked
     )
   );
